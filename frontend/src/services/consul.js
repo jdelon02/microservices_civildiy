@@ -1,4 +1,4 @@
-const CONSUL_URL = process.env.REACT_APP_CONSUL_URL || 'http://localhost:8500';
+const CONSUL_URL = process.env.REACT_APP_CONSUL_URL || '/consul';
 
 // Get all registered services from Consul
 export const getServices = async () => {

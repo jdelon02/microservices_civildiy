@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ServiceDiscoveryPage from './pages/ServiceDiscoveryPage';
 import './App.css';
 
 function AppContent() {
@@ -20,6 +21,7 @@ function AppContent() {
             <h1>CivilDIY</h1>
           </Link>
           <nav className="nav">
+            <Link to="/services" className="nav-link">Services</Link>
             {isAuthenticated ? (
               <>
                 <span className="user-info">Welcome, {user?.email}</span>
@@ -38,6 +40,7 @@ function AppContent() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/services" element={<ServiceDiscoveryPage />} />
         <Route path="/" element={
           isAuthenticated ? (
             <main>

@@ -1,0 +1,120 @@
+.discovery-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.discovery-container h2 {
+  color: #333;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.discovery-container > p {
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.error-message {
+  background: #fee;
+  color: #c33;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 2rem;
+  border-left: 4px solid #c33;
+}
+
+.services-section,
+.endpoints-section {
+  margin: 3rem 0;
+}
+
+.services-section h3,
+.endpoints-section h3 {
+  color: #333;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 0.5rem;
+}
+
+.services-grid,
+.endpoints-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.service-card,
+.endpoint-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+}
+
+.service-card:hover,
+.endpoint-card:hover {
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+  border-color: #667eea;
+}
+
+.service-card h4,
+.endpoint-card h4 {
+  color: #333;
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag {
+  display: inline-block;
+  background: #667eea;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.endpoint-card p {
+  margin: 0.5rem 0;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.endpoint-card .path {
+  color: #667eea;
+  font-family: monospace;
+  background: #f5f5f5;
+  padding: 0.5rem;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.endpoint-card .instances {
+  color: #666;
+}
+
+.instance-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0 0;
+}
+
+.instance-list li {
+  background: #f9f9f9;
+  padding: 0.5rem;
+  margin: 0.25rem 0;
+  border-left: 3px solid #764ba2;
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: #333;
+}

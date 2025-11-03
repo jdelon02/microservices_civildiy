@@ -1,4 +1,6 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+// Use relative paths by default (nginx will proxy them)
+// For local dev, set REACT_APP_API_URL=http://localhost:8080
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 // Helper to get auth headers
 const getHeaders = (token) => {

@@ -1,5 +1,4 @@
 import os
-import sys
 import logging
 from typing import Optional
 from datetime import datetime
@@ -11,8 +10,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import httpx
 
-# Add shared auth utilities to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from shared_auth import get_current_user
 
 # Configuration

@@ -1,20 +1,16 @@
 import os
-import sys
-import logging
 import json
-from typing import Optional, Dict, Any
+import logging
+from typing import Dict, Any, Optional
 from datetime import datetime
-from bson import ObjectId
 
-from fastapi import FastAPI, HTTPException, status, Header, Depends
+from fastapi import FastAPI, HTTPException, status, Depends
 from pydantic import BaseModel
-from pymongo import MongoClient
-from pymongo.errors import PyMongoError
+from pymongo import MongoClient, errors as PyMongoError
+from bson import ObjectId
 from confluent_kafka import Producer
 import httpx
 
-# Add parent directory to path for shared_auth import
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from shared_auth import get_current_user
 
 # Configuration

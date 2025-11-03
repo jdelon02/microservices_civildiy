@@ -1,5 +1,4 @@
 import os
-import sys
 import logging
 import json
 import threading
@@ -12,8 +11,6 @@ from confluent_kafka import Consumer, KafkaError
 import redis
 import httpx
 
-# Add shared auth utilities to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from shared_auth import get_current_user
 
 # Configuration

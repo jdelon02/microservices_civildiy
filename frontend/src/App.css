@@ -150,8 +150,3 @@ main {
   color: #666;
   font-size: 1.1rem;
 }
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}

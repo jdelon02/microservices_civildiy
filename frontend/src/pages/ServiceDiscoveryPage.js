@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getServices, getServiceHealth, buildAPIEndpoints } from '../services/consul';
+import { getServices, buildAPIEndpoints } from '../services/consul';
 import './ServiceDiscoveryPage.css';
 
 const ServiceDiscoveryPage = () => {

@@ -1,0 +1,153 @@
+services:
+
+  # --- Infrastructure Services ---
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    restart: always
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    restart: always
+
+  consul-server:
+    image: hashicorp/consul:latest
+    container_name: consul-server
+    command: agent -server -ui -node=server-1 -bootstrap-expect=1 -client=0.0.0.0
+    ports:
+      - "8500:8500" # Expose Consul UI/API to host
+    restart: always
+
+  read-db:
+    image: redis:latest # Using Redis for the high-speed feed database
+    container_name: read-db
+    restart: always
+    # Volumes would be added here for data persistence
+
+  postgres-db:
+    image: postgres:15
+    container_name: postgres-db
+    environment:
+      POSTGRES_DB: microservices_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    restart: always
+    # Volumes would be added here for data persistence
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: posts_db
+    restart: always
+    # Volumes would be added here for data persistence
+
+  # --- API Gateway ---
+
+  api-gateway:
+    image: traefik:v2.10
+    container_name: api-gateway
+    command:
+      - "--configFile=/etc/traefik/traefik.yml"
+    ports:
+      - "80:80" # Public entry point
+      - "8080:8080" # Traefik Dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro" # Required to monitor Docker events
+      - "./api_gateway/traefik.yml:/etc/traefik/traefik.yml:ro"
+      - "./api_gateway/dynamic.yml:/etc/traefik/dynamic.yml:ro"
+    depends_on:
+      - auth-service
+      - user-profile-service
+      - posts-service
+      - feed-generator-service
+      - mongodb
+      - kafka
+    restart: always
+
+  # --- Python Microservices (Assuming local Dockerfiles in respective folders) ---
+
+  auth-service:
+    build:
+      context: ./auth_services
+      dockerfile: Dockerfile
+      cache_from: []
+    container_name: auth-service
+    environment:
+      CONSUL_HOST: consul-server
+      DATABASE_URL: postgresql://user:password@postgres-db:5432/microservices_db
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+    restart: always
+    depends_on:
+      - consul-server
+      - postgres-db
+
+  user-profile-service:
+    build:
+      context: ./user-profile-service
+      dockerfile: Dockerfile
+      cache_from: []
+    container_name: user-profile-service
+    environment:
+      CONSUL_HOST: consul-server
+      DATABASE_URL: postgresql://user:password@postgres-db:5432/microservices_db
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+    restart: always
+    depends_on:
+      - consul-server
+      - postgres-db
+
+  posts-service:
+    build:
+      context: ./posts-service
+      dockerfile: Dockerfile
+      cache_from: []
+    container_name: posts-service
+    environment:
+      MONGODB_URL: mongodb://user:password@mongodb:27017
+      MONGODB_DB: posts_db
+      KAFKA_HOST: kafka:9092
+      CONSUL_HOST: consul-server
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+    restart: always
+    depends_on:
+      - mongodb
+      - kafka
+      - consul-server
+
+  
+  feed-generator-service:
+    build:
+      context: ./feed-generator-service
+      dockerfile: Dockerfile
+      cache_from: []
+    container_name: feed-generator-service
+    environment:
+      KAFKA_HOST: kafka:9092
+      REDIS_HOST: read-db
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      CONSUL_HOST: consul-server
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+    restart: always
+    depends_on:
+      - kafka
+      - read-db
+      - consul-server
+

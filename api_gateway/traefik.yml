@@ -1,0 +1,22 @@
+# Static Traefik Configuration
+api:
+  insecure: true
+  dashboard: true
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+  file:
+    filename: "/etc/traefik/dynamic.yml"
+  consul:
+    rootKey: "traefik"
+    endpoints:
+      - "consul-server:8500"
+
+log:
+  level: DEBUG

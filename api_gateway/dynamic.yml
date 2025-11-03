@@ -1,0 +1,5 @@
+# Dynamic Traefik Configuration - Middleware Definitions
+# Note: JWT authentication is now handled at the service level
+
+http:
+  middlewares: {}

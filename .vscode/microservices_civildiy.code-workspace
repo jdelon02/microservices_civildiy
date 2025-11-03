@@ -1,0 +1,59 @@
+{
+    "folders": [
+        {
+            "path": "..",
+            "name": "microservices_civildiy"
+        }
+    ],
+    "settings": {
+        "github.copilot.enable": {
+            "*": true,
+            "plaintext": false,
+            "markdown": true,
+            "python": true,
+            "javascript": true,
+            "typescript": true
+        },
+        "github.copilot.advanced": {
+            "inlineSuggestCount": 3,
+            "referenceFiles": [
+                "${workspaceFolder}/reference-docs/**/*.md",
+                "${workspaceFolder}/reference-docs/**/*.txt"
+            ]
+        },
+        "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+        "github.copilot.chat.codeGeneration.instructions": [
+            {
+                "file": "${workspaceFolder}/.github/copilot-instructions.md"
+            }
+        ],
+        "github.copilot.chat.welcomeMessage": "I have access to your Agent OS standards and python project configuration. I can help with code generation, testing, and reviews following your established patterns.",
+        "github.copilot.chat.testGeneration.instructions": [
+            {
+                "text": "Use testing conventions appropriate for python project with additional technologies: docker traefik. Follow Agent OS standards from ${workspaceFolder}/reference-docs/python/ for primary testing approaches."
+            }
+        ],
+        "github.copilot.chat.reviewSelection.instructions": [
+            {
+                "text": "Ensure code follows python coding standards and best practices. Review against Agent OS standards in ${workspaceFolder}/reference-docs/python/ and supplementary standards for: docker traefik. Check for security, performance, and maintainability."
+            }
+        ],
+        "files.watcherExclude": {
+            "**/.git/objects/**": true,
+            "**/.git/subtree-cache/**": true,
+            "**/node_modules/**": true,
+            "**/vendor/**": true,
+            "**/dist/**": true,
+            "**/build/**": true,
+            "**/.DS_Store": true,
+            "**/tmp/**": true,
+            "**/cache/**": true
+        }
+    },
+    "extensions": {
+        "recommendations": [
+            "github.copilot",
+            "github.copilot-chat"
+        ]
+    }
+}

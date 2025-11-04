@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { profileService } from '../services/api';
 import './UserProfilePage.css';
 
 const UserProfilePage = () => {
   const { token } = useAuth();
+  const { themePreference, setThemePreference } = useTheme();
   const [profile, setProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -92,14 +94,20 @@ const UserProfilePage = () => {
     setSaving(true);
 
     try {
+      // Store theme preference in preferences field
+      const dataWithPreferences = {
+        ...formData,
+        preferences: JSON.stringify({ theme: themePreference }),
+      };
+
       let result;
       if (profile) {
         // Update existing profile
-        result = await profileService.update(token, formData);
+        result = await profileService.update(token, dataWithPreferences);
         setSuccess('Profile updated successfully!');
       } else {
         // Create new profile
-        result = await profileService.create(token, formData);
+        result = await profileService.create(token, dataWithPreferences);
         setSuccess('Profile created successfully!');
       }
       
@@ -360,6 +368,33 @@ const UserProfilePage = () => {
               <div className="info-group">
                 <label>Bio:</label>
                 <p className="bio-text">{profile.bio || 'Not provided'}</p>
+              </div>
+            </div>
+
+            <div className="theme-preference">
+              <label>Theme Preference:</label>
+              <div className="theme-options">
+                <button
+                  className={`theme-option ${themePreference === 'light' ? 'active' : ''}`}
+                  onClick={() => setThemePreference('light')}
+                  title="Light Mode"
+                >
+                  ☀️ Light
+                </button>
+                <button
+                  className={`theme-option ${themePreference === 'dark' ? 'active' : ''}`}
+                  onClick={() => setThemePreference('dark')}
+                  title="Dark Mode"
+                >
+                  🌙 Dark
+                </button>
+                <button
+                  className={`theme-option ${themePreference === 'system' ? 'active' : ''}`}
+                  onClick={() => setThemePreference('system')}
+                  title="Match System Preferences"
+                >
+                  💻 System
+                </button>
               </div>
             </div>
 

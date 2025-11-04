@@ -94,8 +94,10 @@ export const postsService = {
 
 // Activity feed endpoints
 export const feedService = {
-  getGlobal: (limit = 20, skip = 0) =>
-    apiCall(`/api/activity-stream?limit=${limit}&skip=${skip}`),
+  getGlobal: (token, limit = 20, skip = 0) =>
+    apiCall(`/api/activity-stream?limit=${limit}&skip=${skip}`, {
+      token,
+    }),
 
   getUser: (token, limit = 20, skip = 0) =>
     apiCall(`/api/activity-stream/user?limit=${limit}&skip=${skip}`, {

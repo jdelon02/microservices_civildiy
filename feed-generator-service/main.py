@@ -193,8 +193,8 @@ async def health_check():
     return {"status": "healthy"}
 
 @app.get("/api/activity-stream")
-async def get_global_activity_stream(limit: int = 20, skip: int = 0):
-    """Get global activity stream"""
+async def get_global_activity_stream(limit: int = 20, skip: int = 0, current_user: dict = Depends(get_current_user)):
+    """Get global activity stream (requires authentication)"""
     try:
         global_feed_key = "feed:activity:global"
         

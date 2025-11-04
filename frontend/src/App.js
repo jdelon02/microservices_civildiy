@@ -44,7 +44,7 @@ function AppContent() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/services" element={<ServiceDiscoveryPage />} />
-        <Route path="/happeningnow" element={<HappeningNowPage />} />
+        <Route path="/happeningnow" element={isAuthenticated ? <HappeningNowPage /> : <LoginPage />} />
         <Route path="/posts/new" element={isAuthenticated ? <CreatePostPage /> : <LoginPage />} />
         <Route path="/posts/:postId" element={<PostDetailPage />} />
         <Route path="/posts/:postId/edit" element={isAuthenticated ? <PostDetailPage /> : <LoginPage />} />

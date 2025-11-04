@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { feedService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import './HappeningNowPage.css';
 
 const HappeningNowPage = () => {
+  const { isAuthenticated, token } = useAuth();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -14,7 +16,7 @@ const HappeningNowPage = () => {
     const loadActivityStream = async () => {
       try {
         setLoading(true);
-        const data = await feedService.getGlobal(limit, skip);
+        const data = await feedService.getGlobal(token, limit, skip);
         setActivities(data.items || []);
       } catch (err) {
         setError(err.message || 'Failed to load activity stream');
@@ -24,7 +26,7 @@ const HappeningNowPage = () => {
     };
 
     loadActivityStream();
-  }, [skip, limit]);
+  }, [skip, limit, token]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);

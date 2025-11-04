@@ -74,7 +74,7 @@ const PostDetailPage = () => {
     try {
       setSaving(true);
       await postsService.delete(token, postId);
-      navigate('/posts');
+      navigate('/');
     } catch (err) {
       setError(err.message || 'Failed to delete post');
       setSaving(false);
@@ -96,14 +96,14 @@ const PostDetailPage = () => {
     return (
       <div className="post-detail-container">
         <div className="error-message">Post not found</div>
-        <Link to="/posts" className="back-link">← Back to Posts</Link>
+        <Link to="/" className="back-link">← Back to Posts</Link>
       </div>
     );
   }
 
   return (
     <main className="post-detail-container">
-      <Link to="/posts" className="back-link">← Back to Posts</Link>
+      <Link to="/" className="back-link">← Back to Posts</Link>
 
       {error && <div className="error-message">{error}</div>}
 

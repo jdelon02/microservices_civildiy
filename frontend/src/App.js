@@ -6,6 +6,7 @@ import RegisterPage from './pages/RegisterPage';
 import ServiceDiscoveryPage from './pages/ServiceDiscoveryPage';
 import HomePage from './pages/HomePage';
 import PostDetailPage from './pages/PostDetailPage';
+import UserProfilePage from './pages/UserProfilePage';
 import './App.css';
 
 function AppContent() {
@@ -26,6 +27,7 @@ function AppContent() {
             <Link to="/services" className="nav-link">Services</Link>
             {isAuthenticated ? (
               <>
+                <Link to="/profile" className="nav-link">👤 Profile</Link>
                 <span className="user-info">Welcome, {user?.email}</span>
                 <button onClick={logout} className="logout-btn">Logout</button>
               </>
@@ -43,6 +45,7 @@ function AppContent() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/services" element={<ServiceDiscoveryPage />} />
+        <Route path="/profile" element={isAuthenticated ? <UserProfilePage /> : <LoginPage />} />
         <Route path="/posts/:postId" element={<PostDetailPage />} />
         <Route path="/posts/:postId/edit" element={isAuthenticated ? <PostDetailPage /> : <LoginPage />} />
         <Route path="/" element={<HomePage />} />

@@ -149,4 +149,31 @@ main {
 .dashboard p {
   color: #666;
   font-size: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+.dashboard-link {
+  display: inline-block;
+  margin-right: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #6c757d;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.dashboard-link:hover {
+  background-color: #5a6268;
+  transform: translateY(-2px);
+}
+
+.dashboard-link-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.dashboard-link-primary:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%);
 }

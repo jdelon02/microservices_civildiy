@@ -4,6 +4,9 @@ import { useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ServiceDiscoveryPage from './pages/ServiceDiscoveryPage';
+import PostsPage from './pages/PostsPage';
+import CreatePostPage from './pages/CreatePostPage';
+import PostDetailPage from './pages/PostDetailPage';
 import './App.css';
 
 function AppContent() {
@@ -41,12 +44,18 @@ function AppContent() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/services" element={<ServiceDiscoveryPage />} />
+        <Route path="/posts" element={isAuthenticated ? <PostsPage /> : <LoginPage />} />
+        <Route path="/posts/new" element={isAuthenticated ? <CreatePostPage /> : <LoginPage />} />
+        <Route path="/posts/:postId" element={<PostDetailPage />} />
+        <Route path="/posts/:postId/edit" element={isAuthenticated ? <PostDetailPage /> : <LoginPage />} />
         <Route path="/" element={
           isAuthenticated ? (
             <main>
               <section className="dashboard">
-                <h2>Dashboard</h2>
+                <h2>Welcome, {user?.email}</h2>
                 <p>Welcome back! Here you can manage your posts and profile.</p>
+                <Link to="/posts" className="dashboard-link">View All Posts →</Link>
+                <Link to="/posts/new" className="dashboard-link dashboard-link-primary">Create New Post →</Link>
               </section>
             </main>
           ) : (

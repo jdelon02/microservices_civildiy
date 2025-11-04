@@ -19,9 +19,11 @@ const LoginPage = () => {
 
     try {
       const response = await authService.login(email, password);
-      if (response.token) {
-        login(response.token);
+      if (response && response.access_token) {
+        login(response.access_token);
         navigate('/');
+      } else {
+        setError('Login failed: No token received');
       }
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');

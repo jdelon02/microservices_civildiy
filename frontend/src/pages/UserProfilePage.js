@@ -320,7 +320,7 @@ const UserProfilePage = () => {
               </button>
             </div>
           </form>
-        ) : (
+        ) : profile ? (
           <div className="profile-view">
             <div className="profile-section">
               <div className="info-row">
@@ -387,6 +387,12 @@ const UserProfilePage = () => {
               <button onClick={handleEdit} className="edit-btn">
                 Edit Profile
               </button>
+            </div>
+          </div>
+        ) : (
+          <div className="profile-view">
+            <div className="profile-section">
+              <p>Unable to load profile. Please try again.</p>
             </div>
           </div>
         )}

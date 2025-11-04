@@ -44,9 +44,18 @@ const RegisterPage = () => {
 
     try {
       const response = await authService.register(email, password);
-      if (response.token) {
-        login(response.token);
-        navigate('/');
+      if (response && response.id) {
+        // Registration successful, now login
+        try {
+          const loginResponse = await authService.login(email, password);
+          if (loginResponse && loginResponse.access_token) {
+            login(loginResponse.access_token);
+            navigate('/');
+          }
+        } catch (loginErr) {
+          setError('Registration successful! Please login with your credentials.');
+          navigate('/login');
+        }
       }
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');

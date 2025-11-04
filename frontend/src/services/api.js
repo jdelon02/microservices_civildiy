@@ -45,7 +45,7 @@ export const authService = {
   register: (email, password) =>
     apiCall('/api/auth/register', {
       method: 'POST',
-      body: { email, password },
+      body: { email, password, username: email.split('@')[0] },
     }),
 
   login: (email, password) =>

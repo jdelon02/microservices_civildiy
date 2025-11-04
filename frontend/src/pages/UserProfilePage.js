@@ -24,7 +24,6 @@ const UserProfilePage = () => {
     country: '',
     phone: '',
     bio: '',
-    preferences: '',
   });
 
   // Load profile on mount
@@ -52,7 +51,6 @@ const UserProfilePage = () => {
         country: data.country || '',
         phone: data.phone || '',
         bio: data.bio || '',
-        preferences: data.preferences || '',
       });
       setIsEditing(false);
     } catch (err) {
@@ -137,7 +135,6 @@ const UserProfilePage = () => {
         country: profile.country || '',
         phone: profile.phone || '',
         bio: profile.bio || '',
-        preferences: profile.preferences || '',
       });
     }
     setError('');
@@ -292,20 +289,6 @@ const UserProfilePage = () => {
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="preferences">Preferences (JSON)</label>
-              <textarea
-                id="preferences"
-                name="preferences"
-                value={formData.preferences}
-                onChange={handleInputChange}
-                placeholder='{"notifications": true, "theme": "light"}'
-                rows={3}
-                disabled={saving}
-              />
-              <small>Optional: Store preferences as JSON</small>
-            </div>
-
             <div className="form-actions">
               <button
                 type="submit"
@@ -378,13 +361,6 @@ const UserProfilePage = () => {
                 <label>Bio:</label>
                 <p className="bio-text">{profile.bio || 'Not provided'}</p>
               </div>
-
-              {profile.preferences && (
-                <div className="info-group">
-                  <label>Preferences:</label>
-                  <pre className="preferences-text">{profile.preferences}</pre>
-                </div>
-              )}
             </div>
 
             <div className="profile-actions">

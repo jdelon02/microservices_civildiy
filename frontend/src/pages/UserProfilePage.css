@@ -195,16 +195,6 @@
   line-height: 1.6;
 }
 
-.preferences-text {
-  background-color: #f5f5f5;
-  padding: 1rem;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-  overflow-x: auto;
-  font-size: 0.85rem;
-  margin: 0;
-  line-height: 1.4;
-}
 
 .profile-actions {
   display: flex;

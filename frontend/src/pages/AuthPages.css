@@ -7,17 +7,17 @@
 }
 
 .auth-card {
-  background: white;
+  background: var(--card-bg);
   padding: 40px;
   border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 25px var(--shadow);
   width: 100%;
   max-width: 400px;
 }
 
 .auth-card h2 {
   text-align: center;
-  color: #333;
+  color: var(--text-color);
   margin-bottom: 30px;
   font-size: 28px;
 }
@@ -29,18 +29,20 @@
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  color: #555;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .form-group input {
   width: 100%;
   padding: 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   font-size: 14px;
   transition: border-color 0.3s;
   box-sizing: border-box;
+  background-color: var(--card-bg);
+  color: var(--text-color);
 }
 
 .form-group input:focus {
@@ -86,11 +88,11 @@
   text-align: center;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border-color);
 }
 
 .auth-link p {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 14px;
   margin: 0;
 }

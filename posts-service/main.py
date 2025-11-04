@@ -10,6 +10,7 @@ from pymongo import MongoClient, errors as PyMongoError
 from bson import ObjectId
 from confluent_kafka import Producer
 import httpx
+from bleach import clean
 
 from shared_auth import get_current_user
 
@@ -31,6 +32,30 @@ posts_collection = db["posts"]
 
 # Kafka producer
 kafka_producer = Producer({"bootstrap.servers": KAFKA_HOST})
+
+# HTML sanitization configuration
+ALLOWED_TAGS = [
+    'p', 'br', 'strong', 'b', 'em', 'i', 's', 'u',
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'ul', 'ol', 'li',
+    'blockquote', 'code', 'pre',
+    'a', 'img', 'hr'
+]
+
+ALLOWED_ATTRIBUTES = {
+    'a': ['href', 'title'],
+    'img': ['src', 'alt', 'title', 'width', 'height'],
+    '*': ['class']  # Allow class attribute on all tags for styling
+}
+
+def sanitize_html(content: str) -> str:
+    """Sanitize HTML content to remove malicious scripts and tags"""
+    return clean(
+        content,
+        tags=ALLOWED_TAGS,
+        attributes=ALLOWED_ATTRIBUTES,
+        strip=True  # Strip disallowed tags instead of escaping
+    )
 
 # FastAPI app
 app = FastAPI()
@@ -164,10 +189,13 @@ async def create_post(post: PostCreate, current_user: Dict[str, Any] = Depends(g
     
     try:
         now = datetime.utcnow()
+        # Sanitize HTML content to prevent XSS attacks
+        sanitized_content = sanitize_html(post.content)
+        
         post_data = {
             "user_id": user_id,
             "title": post.title,
-            "content": post.content,
+            "content": sanitized_content,
             "tags": post.tags or [],
             "created_at": now,
             "updated_at": now
@@ -238,6 +266,10 @@ async def update_post(post_id: str, post_update: PostUpdate, current_user: Dict[
         # Update fields
         update_data = post_update.dict(exclude_unset=True)
         update_data["updated_at"] = datetime.utcnow()
+        
+        # Sanitize HTML content if updating content
+        if "content" in update_data:
+            update_data["content"] = sanitize_html(update_data["content"])
         
         posts_collection.update_one(
             {"_id": ObjectId(post_id)},

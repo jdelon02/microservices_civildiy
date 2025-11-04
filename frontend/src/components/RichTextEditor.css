@@ -1,0 +1,163 @@
+.rich-text-editor {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  font-family: inherit;
+}
+
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 12px;
+  background: #f9f9f9;
+  border-bottom: 1px solid #ddd;
+  align-items: center;
+}
+
+.toolbar-btn {
+  padding: 6px 10px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: #333;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar-btn:hover:not(:disabled) {
+  background: #e8e8e8;
+  border-color: #999;
+}
+
+.toolbar-btn.active {
+  background: #007bff;
+  color: white;
+  border-color: #0056b3;
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: #ddd;
+  margin: 0 4px;
+}
+
+.editor-content {
+  padding: 16px;
+  min-height: 300px;
+  outline: none;
+}
+
+.editor-content p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.editor-content h1,
+.editor-content h2,
+.editor-content h3 {
+  margin: 16px 0 8px 0;
+  line-height: 1.4;
+}
+
+.editor-content h1 {
+  font-size: 28px;
+}
+
+.editor-content h2 {
+  font-size: 24px;
+}
+
+.editor-content h3 {
+  font-size: 20px;
+}
+
+.editor-content ul,
+.editor-content ol {
+  margin: 8px 0 8px 20px;
+  line-height: 1.6;
+}
+
+.editor-content li {
+  margin: 4px 0;
+}
+
+.editor-content code {
+  background: #f4f4f4;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.editor-content pre {
+  background: #f4f4f4;
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.editor-content pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.editor-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 8px 0;
+}
+
+.editor-content a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.editor-content a:hover {
+  text-decoration: underline;
+}
+
+.editor-content hr {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 16px 0;
+}
+
+.editor-content blockquote {
+  border-left: 4px solid #ddd;
+  padding-left: 12px;
+  margin: 8px 0;
+  color: #666;
+  font-style: italic;
+}
+
+.editor-placeholder {
+  position: absolute;
+  color: #999;
+  pointer-events: none;
+  font-size: 14px;
+}
+
+.editor-content:focus {
+  outline: none;
+}
+
+.editor-content.ProseMirror:focus {
+  outline: none;
+}

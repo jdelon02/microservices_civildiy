@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { feedService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import SafeHTMLRenderer from '../components/SafeHTMLRenderer';
 import './HappeningNowPage.css';
 
 const HappeningNowPage = () => {
@@ -88,7 +89,7 @@ const HappeningNowPage = () => {
                     User {activity.user_id} {getActivityLabel(activity.event_type)}
                   </p>
                   {activity.title && (
-                    <p className="activity-title">{activity.title}</p>
+                    <SafeHTMLRenderer html={activity.title} className="activity-title" />
                   )}
                 </div>
 

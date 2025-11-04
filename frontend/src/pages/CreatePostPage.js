@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { postsService } from '../services/api';
+import RichTextEditor from '../components/RichTextEditor';
 import './CreatePostPage.css';
 
 const CreatePostPage = () => {
@@ -84,16 +85,12 @@ const CreatePostPage = () => {
 
           <div className="form-group">
             <label htmlFor="content">Content</label>
-            <textarea
-              id="content"
+            <RichTextEditor
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Write your post content here..."
-              rows="8"
-              required
-              disabled={loading}
+              onChange={setContent}
+              placeholder="Write your post content here (minimum 10 characters)..."
             />
-            <small>Minimum 10 characters</small>
+            <small>Minimum 10 characters - Use the toolbar above to format your content</small>
           </div>
 
           <div className="form-group">

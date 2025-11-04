@@ -29,7 +29,10 @@ const UserProfilePage = () => {
 
   // Load profile on mount
   useEffect(() => {
-    loadProfile();
+    if (token) {
+      loadProfile();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const loadProfile = async () => {

@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { postsService, feedService } from '../services/api';
-import RichTextEditor from '../components/RichTextEditor';
+import { feedService } from '../services/api';
+import CreatePostModal from '../components/CreatePostModal';
 import FeedCard from '../components/FeedCard';
 import './HomePage.css';
 
 const HomePage = () => {
   const { isAuthenticated, token } = useAuth();
   
-  // Post creation state
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [tags, setTags] = useState('');
-  const [postError, setPostError] = useState('');
-  const [postLoading, setPostLoading] = useState(false);
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Feed state
   const [activities, setActivities] = useState([]);
@@ -41,57 +37,14 @@ const HomePage = () => {
     }
   }, [skip, limit, token, isAuthenticated]);
 
-  const validateForm = () => {
-    if (!title.trim()) {
-      setPostError('Title is required');
-      return false;
-    }
-    if (!content.trim()) {
-      setPostError('Content is required');
-      return false;
-    }
-    if (title.length < 3) {
-      setPostError('Title must be at least 3 characters');
-      return false;
-    }
-    if (content.length < 10) {
-      setPostError('Content must be at least 10 characters');
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setPostError('');
-
-    if (!validateForm()) {
-      return;
-    }
-
-    setPostLoading(true);
-
+  const handlePostCreated = async () => {
+    // Reload feed from the beginning
+    setSkip(0);
     try {
-      const tagArray = tags
-        .split(',')
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0);
-
-      await postsService.create(token, title, content, tagArray);
-      
-      // Reset form
-      setTitle('');
-      setContent('');
-      setTags('');
-      
-      // Reload feed from the beginning
-      setSkip(0);
       const data = await feedService.getGlobal(token, limit, 0);
       setActivities(data.items || []);
     } catch (err) {
-      setPostError(err.message || 'Failed to create post');
-    } finally {
-      setPostLoading(false);
+      setFeedError(err.message || 'Failed to reload feed');
     }
   };
 
@@ -128,63 +81,21 @@ const HomePage = () => {
 
   return (
     <main className="home-container">
-      {/* Post Creation Section */}
-      <section className="post-creation-section">
-        <div className="post-creation-card">
-          <h2>What's on your mind?</h2>
-          
-          {postError && <div className="error-message">{postError}</div>}
-          
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="title">Title</label>
-              <input
-                id="title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter post title"
-                required
-                disabled={postLoading}
-              />
-              <small>Minimum 3 characters</small>
-            </div>
+      {/* Floating Action Button */}
+      <button 
+        className="fab-button" 
+        onClick={() => setIsModalOpen(true)}
+        title="Create New Post"
+      >
+        ✏️
+      </button>
 
-            <div className="form-group">
-              <label htmlFor="content">Content</label>
-              <RichTextEditor
-                value={content}
-                onChange={setContent}
-                placeholder="Write your post content here (minimum 10 characters)..."
-              />
-              <small>Minimum 10 characters - Use the toolbar above to format your content</small>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="tags">Tags (comma-separated)</label>
-              <input
-                id="tags"
-                type="text"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="e.g., diy, woodworking, tutorial"
-                disabled={postLoading}
-              />
-              <small>Optional: separate multiple tags with commas</small>
-            </div>
-
-            <div className="form-actions">
-              <button 
-                type="submit" 
-                disabled={postLoading}
-                className="submit-btn"
-              >
-                {postLoading ? 'Publishing...' : 'Publish Post'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
+      {/* Create Post Modal */}
+      <CreatePostModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onPostCreated={handlePostCreated}
+      />
 
       {/* Activity Feed Section */}
       <section className="feed-section">

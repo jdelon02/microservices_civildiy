@@ -97,77 +97,28 @@
   color: #000;
   line-height: 1.6;
   word-break: break-word;
-  max-height: 300px;
-  overflow: hidden;
-  position: relative;
 }
 
 .excerpt-text {
-  display: block;
-}
-
-/* Excerpt text styling */
-.feed-post-excerpt p {
   margin: 0 0 8px 0;
+  line-height: 1.6;
+  color: #333;
 }
 
-.feed-post-excerpt h1,
-.feed-post-excerpt h2,
-.feed-post-excerpt h3 {
-  margin: 12px 0 8px 0;
-  font-size: 1.1em;
-}
-
-.feed-post-excerpt ul,
-.feed-post-excerpt ol {
-  margin: 8px 0 8px 20px;
-}
-
-.feed-post-excerpt li {
-  margin: 4px 0;
-}
-
-.feed-post-excerpt code {
-  background: #f2f2f2;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 13px;
-  font-family: 'Courier New', monospace;
-}
-
-.feed-post-excerpt blockquote {
-  border-left: 3px solid #667eea;
-  padding-left: 12px;
-  margin: 8px 0;
-  color: #65676b;
-  font-style: italic;
-}
-
-.feed-post-excerpt a {
-  color: #0a66c2;
+.see-more-link {
+  color: #1877f2;
+  font-weight: 600;
   text-decoration: none;
+  font-size: 14px;
+  display: inline-block;
+  margin-top: 4px;
+  cursor: pointer;
 }
 
-.feed-post-excerpt a:hover {
+.see-more-link:hover {
   text-decoration: underline;
 }
 
-.feed-post-excerpt img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
-  margin: 8px 0;
-}
-
-.feed-post-excerpt pre {
-  background: #f2f2f2;
-  padding: 12px;
-  border-radius: 4px;
-  overflow-x: auto;
-  font-size: 13px;
-  font-family: 'Courier New', monospace;
-  margin: 8px 0;
-}
 
 /* Footer Section */
 .feed-card-footer {

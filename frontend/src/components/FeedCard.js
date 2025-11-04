@@ -5,6 +5,25 @@ import './FeedCard.css';
 
 const FeedCard = ({ activity, formatDate, onDelete }) => {
   const isPostEvent = activity.event_type.startsWith('post_');
+  const PREVIEW_CHARACTER_LIMIT = 150;
+
+  // Strip HTML tags and truncate content for preview
+  const stripHtmlAndTruncate = (html, limit) => {
+    if (!html) return '';
+    
+    // Strip HTML tags
+    const plainText = html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    
+    // Truncate and add ellipsis if needed
+    if (plainText.length > limit) {
+      return plainText.substring(0, limit).trim() + '...';
+    }
+    return plainText;
+  };
+
+  const previewText = stripHtmlAndTruncate(activity.content, PREVIEW_CHARACTER_LIMIT);
+  const isContentTruncated = activity.content && 
+    activity.content.replace(/<[^>]*>/g, '').length > PREVIEW_CHARACTER_LIMIT;
 
   const getEventEmoji = () => {
     switch (activity.event_type) {
@@ -63,9 +82,14 @@ const FeedCard = ({ activity, formatDate, onDelete }) => {
             </div>
           )}
 
-          {/* Content preview with full HTML rendering */}
+          {/* Content preview - truncated with See More */}
           <div className="feed-post-excerpt">
-            <SafeHTMLRenderer html={activity.content} className="excerpt-text" />
+            <p className="excerpt-text">{previewText}</p>
+            {isContentTruncated && (
+              <Link to={`/posts/${activity.post_id}`} className="see-more-link">
+                See More
+              </Link>
+            )}
           </div>
         </div>
       )}

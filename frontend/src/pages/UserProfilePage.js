@@ -56,12 +56,16 @@ const UserProfilePage = () => {
       });
       setIsEditing(false);
     } catch (err) {
-      // Profile doesn't exist, allow creation
-      if (err.message.includes('404')) {
+      // Profile doesn't exist (404), allow creation
+      const errorMsg = err.message || '';
+      if (errorMsg.includes('404') || errorMsg.includes('not found')) {
         setProfile(null);
         setIsEditing(true);
+        setError(''); // Clear error to show form
       } else {
-        setError(err.message || 'Failed to load profile');
+        setProfile(null);
+        setError(errorMsg || 'Failed to load profile');
+        setIsEditing(false);
       }
     } finally {
       setLoading(false);

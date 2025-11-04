@@ -51,8 +51,8 @@ const CreatePostPage = () => {
 
       const newPost = await postsService.create(token, title, content, tagArray);
       
-      // Redirect to posts feed
-      navigate('/posts');
+      // Redirect to activity feed
+      navigate('/happeningnow');
     } catch (err) {
       setError(err.message || 'Failed to create post');
     } finally {
@@ -119,7 +119,7 @@ const CreatePostPage = () => {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/posts')}
+              onClick={() => navigate('/happeningnow')}
               disabled={loading}
               className="cancel-btn"
             >

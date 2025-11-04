@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { feedService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import SafeHTMLRenderer from '../components/SafeHTMLRenderer';
+import FeedCard from '../components/FeedCard';
 import './HappeningNowPage.css';
 
 const HappeningNowPage = () => {
@@ -78,32 +78,11 @@ const HappeningNowPage = () => {
       ) : (
         <div className="activities-list">
           {activities.map((activity, index) => (
-            <article key={`${activity.post_id}-${activity.timestamp}-${index}`} className="activity-card">
-              <div className="activity-icon">
-                {getActivityIcon(activity.event_type)}
-              </div>
-
-              <div className="activity-content">
-                <div className="activity-main">
-                  <p className="activity-label">
-                    User {activity.user_id} {getActivityLabel(activity.event_type)}
-                  </p>
-                  {activity.title && (
-                    <SafeHTMLRenderer html={activity.title} className="activity-title" />
-                  )}
-                </div>
-
-                <p className="activity-time">
-                  {formatDate(activity.timestamp)}
-                </p>
-              </div>
-
-              {activity.post_id && (
-                <Link to={`/posts/${activity.post_id}`} className="activity-link">
-                  View →
-                </Link>
-              )}
-            </article>
+            <FeedCard
+              key={`${activity.post_id}-${activity.timestamp}-${index}`}
+              activity={activity}
+              formatDate={formatDate}
+            />
           ))}
         </div>
       )}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { postsService } from '../services/api';
+import SafeHTMLRenderer from '../components/SafeHTMLRenderer';
 import './PostDetailPage.css';
 
 const PostDetailPage = () => {
@@ -159,7 +160,7 @@ const PostDetailPage = () => {
         ) : (
           <>
             <header className="post-header">
-              <h1>{post.title}</h1>
+              <SafeHTMLRenderer html={post.title} className="post-title" />
               <div className="post-meta">
                 <span className="post-date">Published {formatDate(post.created_at)}</span>
                 {post.updated_at !== post.created_at && (
@@ -169,7 +170,7 @@ const PostDetailPage = () => {
             </header>
 
             <div className="post-body">
-              {post.content}
+              <SafeHTMLRenderer html={post.content} className="post-content" />
             </div>
 
             {post.tags && post.tags.length > 0 && (

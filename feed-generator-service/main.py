@@ -41,9 +41,11 @@ app = FastAPI()
 class ActivityFeedItem(BaseModel):
     post_id: str
     user_id: int
+    username: Optional[str] = None
     event_type: str
     timestamp: datetime
     title: Optional[str] = None
+    content: Optional[str] = None
 
 # Kafka Consumer Configuration
 def create_kafka_consumer():
@@ -66,14 +68,18 @@ def process_kafka_event(event_data: dict):
         post_id = post_data.get("post_id")
         user_id = post_data.get("user_id")
         title = post_data.get("title", "")
+        content = post_data.get("content", "")
+        username = post_data.get("username", f"User {user_id}")
         
         # Create activity item
         activity_item = {
             "post_id": post_id,
             "user_id": user_id,
+            "username": username,
             "event_type": event_type,
             "timestamp": timestamp,
-            "title": title
+            "title": title,
+            "content": content
         }
         
         # Store in Redis

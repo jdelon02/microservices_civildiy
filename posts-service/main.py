@@ -204,11 +204,13 @@ async def create_post(post: PostCreate, current_user: Dict[str, Any] = Depends(g
         result = posts_collection.insert_one(post_data)
         post_data["_id"] = result.inserted_id
         
-        # Publish event
+        # Publish event with full post data
         publish_event("post.created", {
             "post_id": str(result.inserted_id),
             "user_id": user_id,
-            "title": post.title
+            "title": sanitized_content,
+            "content": sanitized_content,
+            "username": current_user.get("email", f"user_{user_id}").split('@')[0]  # Extract username from email
         })
         
         return document_to_response(post_data)

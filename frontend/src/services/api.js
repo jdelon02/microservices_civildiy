@@ -53,6 +53,12 @@ export const authService = {
       method: 'POST',
       body: { email, password },
     }),
+
+  validate: (token) =>
+    apiCall('/api/auth/validate', {
+      method: 'GET',
+      token,
+    }),
 };
 
 // Posts endpoints

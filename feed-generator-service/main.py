@@ -157,7 +157,7 @@ async def register_with_consul():
             
             # Register Traefik routing rules with Consul KV
             traefik_config = {
-                "traefik/http/routers/feed/rule": "Host(`localhost`) && PathPrefix(`/api/activity-stream`)",
+                "traefik/http/routers/feed/rule": "PathPrefix(`/api/activity-stream`)",
                 "traefik/http/routers/feed/service": "feed-service",
                 "traefik/http/routers/feed/entrypoints": "web",
                 "traefik/http/services/feed-service/loadbalancer/servers/0/url": "http://feed-generator-service:5000"

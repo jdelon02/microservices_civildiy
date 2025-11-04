@@ -157,7 +157,7 @@ async def register_with_consul():
             
             # Register Traefik routing rules with Consul KV
             traefik_config = {
-                "traefik/http/routers/auth/rule": "Host(`localhost`) && PathPrefix(`/api/auth`)",
+                "traefik/http/routers/auth/rule": "PathPrefix(`/api/auth`)",
                 "traefik/http/routers/auth/service": "auth-service",
                 "traefik/http/routers/auth/entrypoints": "web",
                 "traefik/http/services/auth-service/loadbalancer/servers/0/url": "http://auth-service:5000"

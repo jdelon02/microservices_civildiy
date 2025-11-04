@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { postsService, feedService } from '../services/api';
+import { postsService } from '../services/api';
 import RichTextEditor from './RichTextEditor';
 import './CreatePostModal.css';
 

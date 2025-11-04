@@ -45,14 +45,14 @@
 
 .hero h2 {
   font-size: 2.5rem;
-  color: #333;
+  color: var(--text-color);
   margin: 0 0 1rem 0;
   font-weight: 700;
 }
 
 .hero p {
   font-size: 1.2rem;
-  color: #666;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -67,20 +67,20 @@
 .feature {
   text-align: center;
   padding: 2rem;
-  background: white;
-  border: 1px solid #ddd;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px var(--shadow);
 }
 
 .feature h3 {
   font-size: 1.3rem;
-  color: #333;
+  color: var(--text-color);
   margin: 0 0 0.5rem 0;
 }
 
 .feature p {
-  color: #666;
+  color: var(--text-secondary);
   margin: 0;
   font-size: 0.95rem;
 }
@@ -89,7 +89,7 @@
 /* Feed Section */
 .feed-section {
   padding-top: 2rem;
-  border-top: 2px solid #f0f0f0;
+  border-top: 2px solid var(--border-color);
 }
 
 .feed-header {
@@ -99,13 +99,13 @@
 
 .feed-header h2 {
   font-size: 2rem;
-  color: #333;
+  color: var(--text-color);
   margin: 0 0 0.5rem 0;
   font-weight: 700;
 }
 
 .feed-header p {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 1rem;
   margin: 0;
 }
@@ -122,8 +122,8 @@
   align-items: flex-start;
   gap: 1rem;
   padding: 1.5rem;
-  background: #fff;
-  border: 1px solid #e0e0e0;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   transition: all 0.3s ease;
   animation: slideIn 0.3s ease-out;
@@ -166,7 +166,7 @@
 
 .activity-label {
   font-size: 0.95rem;
-  color: #333;
+  color: var(--text-color);
   font-weight: 500;
   margin: 0;
 }
@@ -181,7 +181,7 @@
 
 .activity-time {
   font-size: 0.85rem;
-  color: #999;
+  color: var(--text-secondary);
   margin: 0;
 }
 

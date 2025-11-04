@@ -6,7 +6,7 @@ import FeedCard from '../components/FeedCard';
 import './HomePage.css';
 
 const HomePage = () => {
-  const { isAuthenticated, token, user } = useAuth();
+  const { isAuthenticated, token } = useAuth();
   
   // Post creation state
   const [title, setTitle] = useState('');

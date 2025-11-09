@@ -332,12 +332,136 @@ async def startup_event():
     await register_with_consul()
 
 # ============================================================================
-# Health Check
+# Health Checks
 # ============================================================================
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    """Liveness probe: Service is running"""
+    return {
+        "status": "healthy",
+        "service": "book-review-service",
+        "version": "2.0.0",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+@app.get("/ready")
+async def readiness_check():
+    """
+    Readiness probe: Service is ready to accept traffic.
+    Verifies all critical dependencies are available:
+    - MongoDB connectivity
+    - Redis connectivity
+    - Consul connectivity
+    - Book Catalog Service availability
+    """
+    health_status = {}
+    
+    try:
+        # Test MongoDB connectivity
+        mongo_client.admin.command('ping')
+        health_status["mongodb"] = "ok"
+    except Exception as e:
+        logger.error(f"MongoDB check failed: {e}")
+        health_status["mongodb"] = f"failed: {str(e)}"
+    
+    try:
+        # Test Redis connectivity
+        redis_client.ping()
+        health_status["redis"] = "ok"
+    except Exception as e:
+        logger.error(f"Redis check failed: {e}")
+        health_status["redis"] = f"failed: {str(e)}"
+    
+    try:
+        # Test Consul connectivity
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            response = await client.get(
+                f"http://{CONSUL_HOST}:{CONSUL_PORT}/v1/status/leader",
+                timeout=2.0
+            )
+            if response.status_code == 200:
+                health_status["consul"] = "ok"
+            else:
+                health_status["consul"] = f"failed: {response.status_code}"
+    except Exception as e:
+        logger.error(f"Consul check failed: {e}")
+        health_status["consul"] = f"failed: {str(e)}"
+    
+    try:
+        # Test Book Catalog Service availability
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            response = await client.get(
+                f"{BOOK_CATALOG_URL}/health",
+                timeout=2.0
+            )
+            if response.status_code == 200:
+                health_status["book-catalog"] = "ok"
+            else:
+                health_status["book-catalog"] = f"unavailable: {response.status_code}"
+    except Exception as e:
+        logger.error(f"Book Catalog check failed: {e}")
+        health_status["book-catalog"] = f"unavailable: {str(e)}"
+    
+    # Check if all dependencies are healthy
+    if all(v == "ok" for v in health_status.values()):
+        return {
+            "status": "ready",
+            "service": "book-review-service",
+            "dependencies": health_status
+        }
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Service not ready: {health_status}"
+        )
+
+@app.get("/health/db")
+async def db_health_check():
+    """
+    Database health check: Detailed MongoDB and Redis status.
+    Verifies connectivity and basic functionality.
+    """
+    health = {}
+    
+    try:
+        # MongoDB check with ping
+        mongo_client.admin.command('ping')
+        
+        # Get database stats
+        db_stats = mongo_client[MONGODB_DB].command('dbStats')
+        health["mongodb"] = {
+            "status": "healthy",
+            "database": MONGODB_DB,
+            "collections": db_stats.get("collections", 0),
+            "data_size_bytes": db_stats.get("dataSize", 0),
+            "storage_size_bytes": db_stats.get("storageSize", 0)
+        }
+    except Exception as e:
+        logger.error(f"MongoDB health check failed: {e}")
+        health["mongodb"] = {"status": "unhealthy", "error": str(e)}
+    
+    try:
+        # Redis check with info
+        redis_info = redis_client.info()
+        health["redis"] = {
+            "status": "healthy",
+            "connected_clients": redis_info.get("connected_clients", 0),
+            "used_memory_mb": redis_info.get("used_memory", 0) / (1024 * 1024),
+            "db_keys": redis_client.dbsize()
+        }
+    except Exception as e:
+        logger.error(f"Redis health check failed: {e}")
+        health["redis"] = {"status": "unhealthy", "error": str(e)}
+    
+    # Check if any database is unhealthy
+    if any(h.get("status") == "unhealthy" for h in health.values()):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database unhealthy: {health}"
+        )
+    
+    return health
 
 # ============================================================================
 # Review Endpoints

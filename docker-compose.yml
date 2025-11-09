@@ -149,7 +149,7 @@ services:
       - postgres-db
       - consul-server
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/ready"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -178,7 +178,7 @@ services:
       - consul-server
       - book-catalog-service
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/ready"]
       interval: 10s
       timeout: 5s
       retries: 10

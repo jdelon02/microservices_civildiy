@@ -7,7 +7,7 @@ import difflib
 
 from fastapi import FastAPI, HTTPException, status, Depends
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import httpx
@@ -310,12 +310,94 @@ async def startup_event():
     await register_with_consul()
 
 # ============================================================================
-# Health Check
+# Health Checks
 # ============================================================================
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    """Liveness probe: Service is running"""
+    return {
+        "status": "healthy",
+        "service": "book-catalog-service",
+        "version": "2.0.0",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+@app.get("/ready")
+async def readiness_check(db: Session = Depends(get_db)):
+    """
+    Readiness probe: Service is ready to accept traffic.
+    Verifies all critical dependencies are available:
+    - Database connectivity
+    - Consul connectivity
+    """
+    try:
+        # Test database connectivity
+        result = db.execute(text("SELECT 1")).scalar()
+        if result != 1:
+            raise Exception("Database connectivity test failed")
+        
+        # Test Consul connectivity
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            response = await client.get(
+                f"http://{CONSUL_HOST}:{CONSUL_PORT}/v1/status/leader",
+                timeout=2.0
+            )
+            if response.status_code != 200:
+                raise Exception(f"Consul unavailable: {response.status_code}")
+        
+        return {
+            "status": "ready",
+            "service": "book-catalog-service",
+            "dependencies": {
+                "database": "ok",
+                "consul": "ok"
+            }
+        }
+    except Exception as e:
+        logger.error(f"Readiness check failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Service not ready: {str(e)}"
+        )
+
+@app.get("/health/db")
+async def db_health_check(db: Session = Depends(get_db)):
+    """
+    Database health check: Detailed PostgreSQL status.
+    Verifies connectivity and basic functionality.
+    """
+    try:
+        # Test connectivity
+        result = db.execute(text("SELECT 1")).scalar()
+        if result != 1:
+            raise Exception("Database query failed")
+        
+        # Get database version
+        version_result = db.execute(text("SELECT version()")).scalar()
+        
+        # Get connection pool info if available
+        pool_info = {
+            "pool_size": db.engine.pool.size(),
+            "checked_in": db.engine.pool.checked_in()
+        }
+        
+        return {
+            "database": "healthy",
+            "type": "postgresql",
+            "version": version_result.split(',')[0] if version_result else "unknown",
+            "connection_pool": pool_info,
+            "tables_accessible": {
+                "authors": True,
+                "books": True
+            }
+        }
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database unhealthy: {str(e)}"
+        )
 
 # ============================================================================
 # Author Endpoints

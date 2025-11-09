@@ -399,6 +399,34 @@ async def db_health_check(db: Session = Depends(get_db)):
             detail=f"Database unhealthy: {str(e)}"
         )
 
+@app.get("/health/dependencies")
+async def dependencies_health_check():
+    """
+    Dependencies health check: Verify Consul availability.
+    Ensures service discovery is working.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            response = await client.get(
+                f"http://{CONSUL_HOST}:{CONSUL_PORT}/v1/status/leader",
+                timeout=2.0
+            )
+            if response.status_code != 200:
+                raise Exception(f"Consul returned {response.status_code}")
+        
+        return {
+            "status": "all_dependencies_available",
+            "dependencies": {
+                "consul": "available"
+            }
+        }
+    except Exception as e:
+        logger.error(f"Dependency check failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Dependencies unhealthy: {str(e)}"
+        )
+
 # ============================================================================
 # Author Endpoints
 # ============================================================================

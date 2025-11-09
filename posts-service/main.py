@@ -177,10 +177,131 @@ async def startup_event():
     
     await register_with_consul()
 
-# Routes
+# ============================================================================
+# Health Checks
+# ============================================================================
+
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    """Liveness probe: Service is running"""
+    return {
+        "status": "healthy",
+        "service": "posts-service",
+        "version": "2.0.0",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+@app.get("/ready")
+async def readiness_check():
+    """
+    Readiness probe: Service is ready to accept traffic.
+    Verifies all critical dependencies are available:
+    - MongoDB connectivity
+    - Consul connectivity
+    - Kafka connectivity
+    """
+    health_status = {}
+    
+    try:
+        # Test MongoDB connectivity
+        posts_collection.database.client.admin.command('ping')
+        health_status["mongodb"] = "ok"
+    except Exception as e:
+        logger.error(f"MongoDB check failed: {e}")
+        health_status["mongodb"] = f"failed: {str(e)}"
+    
+    try:
+        # Test Consul connectivity
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            response = await client.get(
+                f"http://{CONSUL_HOST}:{CONSUL_PORT}/v1/status/leader",
+                timeout=2.0
+            )
+            if response.status_code == 200:
+                health_status["consul"] = "ok"
+            else:
+                health_status["consul"] = f"failed: {response.status_code}"
+    except Exception as e:
+        logger.error(f"Consul check failed: {e}")
+        health_status["consul"] = f"failed: {str(e)}"
+    
+    try:
+        # Test Kafka connectivity
+        kafka_producer.flush(timeout=1)
+        health_status["kafka"] = "ok"
+    except Exception as e:
+        logger.error(f"Kafka check failed: {e}")
+        health_status["kafka"] = f"failed: {str(e)}"
+    
+    # Check if all dependencies are healthy
+    if all(v == "ok" for v in health_status.values()):
+        return {
+            "status": "ready",
+            "service": "posts-service",
+            "dependencies": health_status
+        }
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Service not ready: {health_status}"
+        )
+
+@app.get("/health/db")
+async def db_health_check():
+    """
+    Database health check: Detailed MongoDB status.
+    Verifies connectivity and basic functionality.
+    """
+    health = {}
+    
+    try:
+        # MongoDB check
+        posts_collection.database.client.admin.command('ping')
+        db_stats = posts_collection.database.command('dbStats')
+        health["mongodb"] = {
+            "status": "healthy",
+            "collections": db_stats.get("collections", 0),
+            "data_size_bytes": db_stats.get("dataSize", 0),
+            "storage_size_bytes": db_stats.get("storageSize", 0)
+        }
+    except Exception as e:
+        logger.error(f"MongoDB health check failed: {e}")
+        health["mongodb"] = {"status": "unhealthy", "error": str(e)}
+    
+    # Check if database is unhealthy
+    if health.get("mongodb", {}).get("status") == "unhealthy":
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database unhealthy: {health}"
+        )
+    
+    return health
+
+@app.get("/health/kafka")
+async def kafka_health_check():
+    """
+    Kafka connectivity check: Verify event publishing capability.
+    Important for async operations and feed generation.
+    """
+    try:
+        # Flush any pending messages and check if producer is functional
+        kafka_producer.flush(timeout=2)
+        
+        return {
+            "kafka": "healthy",
+            "broker": KAFKA_HOST,
+            "status": "connected"
+        }
+    except Exception as e:
+        logger.error(f"Kafka health check failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Kafka unavailable: {str(e)}"
+        )
+
+# ============================================================================
+# Routes
+# ============================================================================
 
 @app.post("/api/posts", response_model=PostResponse)
 async def create_post(post: PostCreate, current_user: Dict[str, Any] = Depends(get_current_user)):

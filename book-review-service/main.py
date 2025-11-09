@@ -463,6 +463,60 @@ async def db_health_check():
     
     return health
 
+@app.get("/health/kafka")
+async def kafka_health_check():
+    """
+    Kafka connectivity check: Verify event publishing capability.
+    Important for async operations and feed generation.
+    """
+    try:
+        # Flush any pending messages and check if producer is functional
+        kafka_producer.flush(timeout=2)
+        
+        return {
+            "kafka": "healthy",
+            "broker": KAFKA_HOST,
+            "status": "connected"
+        }
+    except Exception as e:
+        logger.error(f"Kafka health check failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Kafka unavailable: {str(e)}"
+        )
+
+@app.get("/health/dependencies")
+async def dependencies_health_check():
+    """
+    Dependencies health check: Verify all external service availability.
+    Useful for detecting cascading failures.
+    """
+    dependencies = {}
+    
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            # Check book-catalog-service
+            response = await client.get(
+                f"{BOOK_CATALOG_URL}/health",
+                timeout=2.0
+            )
+            dependencies["book-catalog"] = "available" if response.status_code == 200 else "unavailable"
+    except Exception as e:
+        logger.error(f"Book catalog check failed: {e}")
+        dependencies["book-catalog"] = "unreachable"
+    
+    # Check if any dependency is unavailable
+    if any("unavailable" in v or "unreachable" in v for v in dependencies.values()):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Dependencies unhealthy: {dependencies}"
+        )
+    
+    return {
+        "status": "all_dependencies_available",
+        "dependencies": dependencies
+    }
+
 # ============================================================================
 # Review Endpoints
 # ============================================================================

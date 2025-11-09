@@ -85,21 +85,31 @@ export const buildAPIEndpoints = async () => {
   const services = await getServices();
   const endpoints = {};
 
-  // Map known services to their API paths
+  // Dynamic mapping: services with 'api' tag get added to endpoints
+  // Base mapping for known services
   const serviceMapping = {
     'posts-service': '/api/posts',
     'feed-generator-service': '/api/activity-stream',
     'user-profile-service': '/api/profile',
     'auth-service': '/api/auth',
+    'book-catalog-service': '/api/books',
+    'book-review-service': '/api/reviews',
   };
 
-  for (const [serviceName, apiPath] of Object.entries(serviceMapping)) {
-    if (services[serviceName]) {
-      endpoints[serviceName] = {
-        name: serviceName,
-        path: apiPath,
-        instances: await getServiceInstances(serviceName),
-      };
+  // Process all services that have 'api' tag
+  for (const [serviceName, tags] of Object.entries(services)) {
+    // Include if in mapping or if tagged as 'api'
+    if (serviceMapping[serviceName] || (tags && tags.includes('api'))) {
+      const apiPath = serviceMapping[serviceName] || `/api/${serviceName.replace('-service', '')}`;
+      try {
+        endpoints[serviceName] = {
+          name: serviceName,
+          path: apiPath,
+          instances: await getServiceInstances(serviceName),
+        };
+      } catch (error) {
+        console.warn(`Failed to get instances for ${serviceName}:`, error);
+      }
     }
   }
 

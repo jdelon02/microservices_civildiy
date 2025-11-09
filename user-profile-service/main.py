@@ -5,7 +5,7 @@ from datetime import datetime
 
 from fastapi import FastAPI, HTTPException, status, Depends
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import httpx
@@ -190,7 +190,7 @@ async def readiness_check(db: Session = Depends(get_db)):
     
     try:
         # Test database connectivity
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         health_status["database"] = "ok"
     except Exception as e:
         logger.error(f"Database check failed: {e}")
@@ -234,8 +234,8 @@ async def db_health_check(db: Session = Depends(get_db)):
     
     try:
         # PostgreSQL check
-        db.execute("SELECT 1")
-        db_stats = db.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'").scalar()
+        db.execute(text("SELECT 1"))
+        db_stats = db.execute(text("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'")).scalar()
         health["database"] = {
             "status": "healthy",
             "tables": db_stats or 0

@@ -217,29 +217,36 @@ export const getServiceReadiness = async (serviceName) => {
 
 // Get database health for a specific service via health-check-service
 export const getServiceDatabaseHealth = async (serviceName) => {
-  try {
-    const response = await fetch(`/api/health/service/${serviceName}/health/db`);
-    
-    if (!response.ok) {
-      return {
-        status: 'unreachable',
-        code: response.status,
-        error: `HTTP ${response.status}`
-      };
+  // Some services use different health endpoints (e.g., feed-generator uses /health/redis)
+  // Try /health/db first, fallback to service-specific endpoints
+  const endpointPriority = [
+    'health/db',
+    'health/redis',
+    'health/kafka'
+  ];
+  
+  for (const endpoint of endpointPriority) {
+    try {
+      const response = await fetch(`/api/health/service/${serviceName}/${endpoint}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          status: data.status === 'reachable' ? 'healthy' : 'unhealthy',
+          endpoint: endpoint,
+          ...data
+        };
+      }
+    } catch (error) {
+      // Continue to next endpoint
     }
-    
-    const data = await response.json();
-    return {
-      status: data.status === 'reachable' ? 'healthy' : 'unreachable',
-      ...data
-    };
-  } catch (error) {
-    console.warn(`Failed to get db health for ${serviceName}:`, error.message);
-    return {
-      status: 'unreachable',
-      error: error.message
-    };
   }
+  
+  // If no endpoints work, return unavailable instead of error
+  return {
+    status: 'unavailable',
+    error: 'No database/cache health endpoint available for this service'
+  };
 };
 
 // Get full health check for a service (combines all checks)

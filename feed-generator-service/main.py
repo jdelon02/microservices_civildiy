@@ -271,6 +271,74 @@ async def startup_event():
 async def health_check():
     return {"status": "healthy"}
 
+@app.get("/ready")
+async def readiness_check():
+    """
+    Readiness probe: Service is ready to accept traffic.
+    Verifies Redis and Kafka connectivity.
+    """
+    health_status = {}
+    
+    try:
+        # Test Redis connectivity
+        redis_client.ping()
+        health_status["redis"] = "ok"
+    except Exception as e:
+        logger.error(f"Redis check failed: {e}")
+        health_status["redis"] = f"failed: {str(e)}"
+    
+    try:
+        # Test Kafka connectivity
+        consumer = create_kafka_consumer()
+        consumer.list_topics(timeout=2)
+        consumer.close()
+        health_status["kafka"] = "ok"
+    except Exception as e:
+        logger.error(f"Kafka check failed: {e}")
+        health_status["kafka"] = f"failed: {str(e)}"
+    
+    # Check if all dependencies are healthy
+    if all(v == "ok" for v in health_status.values()):
+        return {
+            "status": "ready",
+            "service": "feed-generator-service",
+            "dependencies": health_status
+        }
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Service not ready: {health_status}"
+        )
+
+@app.get("/health/redis")
+async def redis_health_check():
+    """
+    Redis health check: Verify Redis connectivity and basic functionality.
+    """
+    health = {}
+    
+    try:
+        # Redis check
+        redis_client.ping()
+        info = redis_client.info()
+        health["redis"] = {
+            "status": "healthy",
+            "connected_clients": info.get("connected_clients", 0),
+            "used_memory_human": info.get("used_memory_human", "unknown")
+        }
+    except Exception as e:
+        logger.error(f"Redis health check failed: {e}")
+        health["redis"] = {"status": "unhealthy", "error": str(e)}
+    
+    # Check if Redis is unhealthy
+    if health.get("redis", {}).get("status") == "unhealthy":
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Redis unhealthy: {health}"
+        )
+    
+    return health
+
 @app.get("/api/activity-stream")
 async def get_global_activity_stream(limit: int = 20, skip: int = 0, current_user: dict = Depends(get_current_user)):
     """Get global activity stream (requires authentication)"""

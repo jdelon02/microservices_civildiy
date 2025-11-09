@@ -37,7 +37,8 @@ class AuthorDB(Base):
     __tablename__ = "authors"
     
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), unique=True, index=True, nullable=False)
+    name = Column(String(255), nullable=False, index=True)
+    normalized_name = Column(String(255), unique=True, index=True, nullable=False)
     bio = Column(Text, nullable=True)
     created_by = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -47,6 +48,7 @@ class BookDB(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False, index=True)
+    normalized_title = Column(String(255), index=True, nullable=False)
     author_id = Column(Integer, ForeignKey("authors.id"), nullable=False, index=True)
     isbn = Column(String(20), unique=True, nullable=True, index=True)
     genre = Column(String(100), nullable=True, index=True)
@@ -150,35 +152,14 @@ def normalize_name(name: str) -> str:
     """
     return ' '.join(name.strip().lower().split())
 
-def find_similar_author(query: str, db: Session) -> Optional[AuthorDB]:
+def find_existing_author_by_normalized(query: str, db: Session) -> Optional[AuthorDB]:
     """
-    Find similar existing author using fuzzy matching.
-    Handles variations like "Tom Clancy", "clancy tom", "Clancy, Tom"
-    
-    Returns the best match if similarity > 0.6 (60%)
+    Find existing author by normalized name (exact match on normalized field).
+    This ensures "Tom Clancy", "clancy tom", "Clancy, Tom" all resolve to the same author.
     """
     normalized_query = normalize_name(query)
-    
-    # Get all authors
-    authors = db.query(AuthorDB).all()
-    
-    best_match = None
-    best_ratio = 0
-    
-    for author in authors:
-        normalized_author = normalize_name(author.name)
-        # Check for exact match first
-        if normalized_author == normalized_query:
-            return author
-        
-        # Check for partial/fuzzy match
-        ratio = difflib.SequenceMatcher(None, normalized_query, normalized_author).ratio()
-        if ratio > best_ratio:
-            best_ratio = ratio
-            best_match = author
-    
-    # Return best match if similarity is > 60%
-    return best_match if best_ratio > 0.6 else None
+    author = db.query(AuthorDB).filter(AuthorDB.normalized_name == normalized_query).first()
+    return author
 
 # ============================================================================
 # Self-registration with Consul
@@ -265,24 +246,17 @@ async def health_check():
 async def create_author(author: AuthorCreate, db: Session = Depends(get_db)):
     """Create a new author"""
     
-    # Check for exact match
-    existing = db.query(AuthorDB).filter(AuthorDB.name == author.name).first()
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Author '{author.name}' already exists"
-        )
-    
-    # Check for similar author (fuzzy match) - helps prevent duplicates
-    similar_author = find_similar_author(author.name, db)
-    if similar_author:
-        # Return existing similar author instead of creating duplicate
-        logger.info(f"Found similar author: '{author.name}' matches '{similar_author.name}'")
-        return similar_author
+    # Check for existing author by normalized name
+    existing_author = find_existing_author_by_normalized(author.name, db)
+    if existing_author:
+        # Return existing author - prevents duplicates of different name formats
+        logger.info(f"Found existing author: '{author.name}' matches stored as '{existing_author.name}'")
+        return existing_author
     
     try:
         db_author = AuthorDB(
             name=author.name,
+            normalized_name=normalize_name(author.name),
             bio=author.bio,
             created_at=datetime.utcnow()
         )
@@ -471,6 +445,7 @@ async def create_book(book: BookCreate, db: Session = Depends(get_db)):
         now = datetime.utcnow()
         db_book = BookDB(
             title=book.title,
+            normalized_title=normalize_name(book.title),
             author_id=book.author_id,
             isbn=book.isbn,
             genre=book.genre,
@@ -525,9 +500,22 @@ async def search_books_by_title(
             .limit(limit)\
             .all()
         
+        # If fewer results, try searching by normalized title
+        if len(books) < limit:
+            normalized_query = normalize_name(q)
+            more_books = db.query(BookDB)\
+                .filter(BookDB.normalized_title.ilike(f"%{normalized_query}%"))\
+                .all()
+            # Add unique books not already in results
+            for book in more_books:
+                if not any(b.id == book.id for b in books):
+                    books.append(book)
+                    if len(books) >= limit:
+                        break
+        
         # Fetch authors for each book
         result = []
-        for book in books:
+        for book in books[:limit]:
             author = db.query(AuthorDB).filter(AuthorDB.id == book.author_id).first()
             result.append(BookWithAuthorResponse(
                 **book.__dict__,

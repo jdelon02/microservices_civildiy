@@ -3,3 +3,23 @@
 
 http:
   middlewares: {}
+  routers:
+    books@consul:
+      entryPoints:
+        - web
+      service: book-catalog-service
+      rule: PathPrefix(`/api/books`)
+    reviews@consul:
+      entryPoints:
+        - web
+      service: book-review-service
+      rule: PathPrefix(`/api/reviews`)
+  services:
+    book-catalog-service:
+      loadBalancer:
+        servers:
+          - url: http://book-catalog-service:5000
+    book-review-service:
+      loadBalancer:
+        servers:
+          - url: http://book-review-service:5000

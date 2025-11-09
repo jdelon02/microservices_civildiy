@@ -143,14 +143,41 @@ def get_db():
 # Name Normalization & Deduplication
 # ============================================================================
 
+def parse_author_name(name: str) -> str:
+    """
+    Parse author name and convert to canonical format.
+    Handles variations:
+    - "Tom Clancy" -> "Tom Clancy"
+    - "Clancy, Tom" -> "Tom Clancy"
+    - "CLANCY, TOM" -> "Tom Clancy"
+    - "clancy tom" -> "Tom Clancy" (swaps if comma-separated pattern detected)
+    
+    Returns canonical format: "FirstName LastName" (title case)
+    """
+    name = name.strip()
+    
+    # Check if it's in "LastName, FirstName" format
+    if ',' in name:
+        parts = [p.strip() for p in name.split(',')]
+        if len(parts) == 2:
+            last_name, first_name = parts
+            # Reconstruct as "FirstName LastName"
+            name = f"{first_name} {last_name}"
+    
+    # Title case each word (handles "tom clancy" -> "Tom Clancy")
+    words = name.split()
+    canonical = ' '.join(word.capitalize() for word in words)
+    return canonical
+
 def normalize_name(name: str) -> str:
     """
-    Normalize author/book names for consistent matching.
-    - Strip whitespace
+    Normalize author/book names for consistent matching/deduplication.
+    - Parse name (handle LastName, FirstName format)
     - Convert to lowercase
-    - Remove extra spaces between words
+    - Remove extra spaces
     """
-    return ' '.join(name.strip().lower().split())
+    parsed = parse_author_name(name)
+    return ' '.join(parsed.lower().split())
 
 def find_existing_author_by_normalized(query: str, db: Session) -> Optional[AuthorDB]:
     """
@@ -254,8 +281,9 @@ async def create_author(author: AuthorCreate, db: Session = Depends(get_db)):
         return existing_author
     
     try:
+        canonical_name = parse_author_name(author.name)
         db_author = AuthorDB(
-            name=author.name,
+            name=canonical_name,  # Store canonical format (e.g., "Tom Clancy" not "Clancy, Tom")
             normalized_name=normalize_name(author.name),
             bio=author.bio,
             created_at=datetime.utcnow()
@@ -443,8 +471,10 @@ async def create_book(book: BookCreate, db: Session = Depends(get_db)):
     
     try:
         now = datetime.utcnow()
+        # Title case the book title for consistency
+        canonical_title = book.title.strip().title()
         db_book = BookDB(
-            title=book.title,
+            title=canonical_title,  # Store title case format
             normalized_title=normalize_name(book.title),
             author_id=book.author_id,
             isbn=book.isbn,

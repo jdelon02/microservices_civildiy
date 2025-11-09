@@ -79,6 +79,7 @@ services:
       - book-catalog-service
       - book-review-service
       - feed-generator-service
+      - health-check-service
       - mongodb
       - kafka
     restart: always

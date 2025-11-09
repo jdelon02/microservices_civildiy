@@ -15,7 +15,7 @@
     "lodash.debounce": "^4.0.8",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.9.5",
+    "react-router-dom": "^6.20.0",
     "react-scripts": "5.0.1",
     "react-select": "^5.10.2",
     "web-vitals": "^2.1.4"

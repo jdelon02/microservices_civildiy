@@ -25,39 +25,25 @@ CONSUL_HOST = os.getenv("CONSUL_HOST", "consul-server")
 CONSUL_PORT = int(os.getenv("CONSUL_PORT", "8500"))
 REQUEST_TIMEOUT = 5.0
 
-# Initialize Consul client
+# Initialize Consul client for querying services
 consul_client = consul.Consul(host=CONSUL_HOST, port=CONSUL_PORT)
 
 
 @app.on_event("startup")
 async def startup_event():
-    """Register service with Consul on startup"""
+    """Startup event - health-check-service will be registered via docker-compose/Traefik"""
     try:
-        consul_client.agent.service.register(
-            name="health-check-service",
-            service_id="health-check-service",
-            address=os.getenv("SERVICE_HOST", "health-check-service"),
-            port=5000,
-            tags=["api", "health"],
-            check=consul.Check.http(
-                "http://localhost:5000/health",
-                interval="10s",
-                timeout="5s"
-            )
-        )
-        logger.info("Health Check Service registered with Consul")
+        # Verify Consul connectivity on startup
+        consul_client.agent.self()
+        logger.info("Health Check Service started - connected to Consul")
     except Exception as e:
-        logger.error(f"Failed to register with Consul: {e}")
+        logger.warning(f"Consul not immediately available: {e}")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Deregister service from Consul on shutdown"""
-    try:
-        consul_client.agent.service.deregister("health-check-service")
-        logger.info("Health Check Service deregistered from Consul")
-    except Exception as e:
-        logger.error(f"Failed to deregister from Consul: {e}")
+    """Shutdown event"""
+    logger.info("Health Check Service shutting down")
 
 
 async def fetch_service_health(

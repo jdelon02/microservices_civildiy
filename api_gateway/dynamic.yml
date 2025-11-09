@@ -27,6 +27,7 @@ http:
     health-check:
       entryPoints:
         - web
+      priority: 2147483647
       service: health-check-service
       rule: PathPrefix(`/api/health`)
   

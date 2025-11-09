@@ -29,15 +29,60 @@ REQUEST_TIMEOUT = 5.0
 consul_client = consul.Consul(host=CONSUL_HOST, port=CONSUL_PORT)
 
 
+# Self-register with Consul
+async def register_with_consul():
+    try:
+        service_data = {
+            "ID": "health-check-service",
+            "Name": "health-check-service",
+            "Address": "health-check-service",
+            "Port": 5000,
+            "Check": {
+                "HTTP": "http://health-check-service:5000/health",
+                "Interval": "10s",
+                "Timeout": "5s"
+            },
+            "Tags": ["api", "health"]
+        }
+        
+        async with httpx.AsyncClient() as client:
+            # Register service with Consul
+            response = await client.put(
+                f"http://{CONSUL_HOST}:{CONSUL_PORT}/v1/agent/service/register",
+                json=service_data
+            )
+            
+            if response.status_code == 200:
+                logger.info("Successfully registered health-check-service with Consul")
+            else:
+                logger.warning(f"Service registration returned status {response.status_code}")
+            
+            # Register Traefik routing rules with Consul KV
+            traefik_config = {
+                "traefik/http/routers/health-check/rule": "PathPrefix(`/api/health`)",
+                "traefik/http/routers/health-check/service": "health-check-service",
+                "traefik/http/routers/health-check/entrypoints": "web",
+                "traefik/http/services/health-check-service/loadbalancer/servers/0/url": "http://health-check-service:5000"
+            }
+            
+            for key, value in traefik_config.items():
+                try:
+                    response = await client.put(
+                        f"http://{CONSUL_HOST}:{CONSUL_PORT}/v1/kv/{key}",
+                        content=value
+                    )
+                    if response.status_code == 200:
+                        logger.info(f"Registered Traefik config: {key}")
+                except Exception as e:
+                    logger.warning(f"Failed to register {key}: {e}")
+    except Exception as e:
+        logger.warning(f"Failed to register with Consul: {e}")
+
+
 @app.on_event("startup")
 async def startup_event():
-    """Startup event - health-check-service will be registered via docker-compose/Traefik"""
-    try:
-        # Verify Consul connectivity on startup
-        consul_client.agent.self()
-        logger.info("Health Check Service started - connected to Consul")
-    except Exception as e:
-        logger.warning(f"Consul not immediately available: {e}")
+    """Startup event - register service with Consul"""
+    await register_with_consul()
 
 
 @app.on_event("shutdown")

@@ -160,8 +160,8 @@ export const getServiceEndpoint = async (serviceName, fallbackGateway = 'http://
 export const getServiceHealthStatus = async (serviceName) => {
   try {
     // Call health-check-service through nginx proxy to Traefik API gateway
-    // Uses relative path just like other API calls in api.js
-    const response = await fetch(`/api/health/service/${serviceName}?endpoint=health`);
+    // Uses /health path to avoid Traefik internal API conflict at /api
+    const response = await fetch(`/health/service/${serviceName}?endpoint=health`);
     
     if (!response.ok) {
       return {
@@ -188,7 +188,7 @@ export const getServiceHealthStatus = async (serviceName) => {
 // Get readiness status for a specific service via health-check-service
 export const getServiceReadiness = async (serviceName) => {
   try {
-    const response = await fetch(`/api/health/service/${serviceName}/ready`);
+    const response = await fetch(`/health/service/${serviceName}/ready`);
     
     if (!response.ok) {
       return {
@@ -218,7 +218,7 @@ export const getServiceReadiness = async (serviceName) => {
 // Get database health for a specific service via health-check-service
 export const getServiceDatabaseHealth = async (serviceName) => {
   try {
-    const response = await fetch(`/api/health/service/${serviceName}/health/db`);
+    const response = await fetch(`/health/service/${serviceName}/health/db`);
     
     if (!response.ok) {
       return {

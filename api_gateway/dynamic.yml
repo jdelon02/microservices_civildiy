@@ -28,8 +28,7 @@ http:
       entryPoints:
         - web
       service: health-check-service
-      rule: PathPrefix(`/api/health`)
-  
+      rule: PathPrefix(`/health`)
   services:
     book-catalog-service:
       loadBalancer:

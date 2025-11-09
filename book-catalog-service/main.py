@@ -156,6 +156,7 @@ async def register_with_consul():
         }
         
         async with httpx.AsyncClient() as client:
+            # Register service
             response = await client.put(
                 f"http://{CONSUL_HOST}:{CONSUL_PORT}/v1/agent/service/register",
                 json=service_data
@@ -165,6 +166,34 @@ async def register_with_consul():
                 logger.info("Successfully registered service with Consul")
             else:
                 logger.warning(f"Service registration returned status {response.status_code}")
+            
+            # Register Traefik routing rules with Consul KV for authors endpoints
+            traefik_config_authors = {
+                "traefik/http/routers/authors/rule": "PathPrefix(`/api/authors`)",
+                "traefik/http/routers/authors/service": "book-catalog-service",
+                "traefik/http/routers/authors/entrypoints": "web",
+                "traefik/http/services/book-catalog-service/loadbalancer/servers/0/url": "http://book-catalog-service:5000"
+            }
+            
+            # Register Traefik routing rules with Consul KV for books endpoints
+            traefik_config_books = {
+                "traefik/http/routers/books/rule": "PathPrefix(`/api/books`)",
+                "traefik/http/routers/books/service": "book-catalog-service",
+                "traefik/http/routers/books/entrypoints": "web",
+            }
+            
+            all_configs = {**traefik_config_authors, **traefik_config_books}
+            
+            for key, value in all_configs.items():
+                try:
+                    response = await client.put(
+                        f"http://{CONSUL_HOST}:{CONSUL_PORT}/v1/kv/{key}",
+                        content=value
+                    )
+                    if response.status_code == 200:
+                        logger.info(f"Registered Traefik config: {key}")
+                except Exception as e:
+                    logger.warning(f"Failed to register {key}: {e}")
     except Exception as e:
         logger.warning(f"Failed to register with Consul: {e}")
 

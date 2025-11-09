@@ -275,6 +275,7 @@ async def register_with_consul():
         }
         
         async with httpx.AsyncClient() as client:
+            # Register service
             response = await client.put(
                 f"http://{CONSUL_HOST}:{CONSUL_PORT}/v1/agent/service/register",
                 json=service_data
@@ -284,6 +285,25 @@ async def register_with_consul():
                 logger.info("Successfully registered service with Consul")
             else:
                 logger.warning(f"Service registration returned status {response.status_code}")
+            
+            # Register Traefik routing rules with Consul KV for reviews endpoints
+            traefik_config = {
+                "traefik/http/routers/reviews/rule": "PathPrefix(`/api/reviews`)",
+                "traefik/http/routers/reviews/service": "book-review-service",
+                "traefik/http/routers/reviews/entrypoints": "web",
+                "traefik/http/services/book-review-service/loadbalancer/servers/0/url": "http://book-review-service:5000"
+            }
+            
+            for key, value in traefik_config.items():
+                try:
+                    response = await client.put(
+                        f"http://{CONSUL_HOST}:{CONSUL_PORT}/v1/kv/{key}",
+                        content=value
+                    )
+                    if response.status_code == 200:
+                        logger.info(f"Registered Traefik config: {key}")
+                except Exception as e:
+                    logger.warning(f"Failed to register {key}: {e}")
     except Exception as e:
         logger.warning(f"Failed to register with Consul: {e}")
 

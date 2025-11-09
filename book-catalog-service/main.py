@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Set
 from datetime import datetime
 import difflib
 
@@ -11,6 +11,12 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, F
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import httpx
+
+# Common words to ignore in title normalization
+STOP_WORDS: Set[str] = {
+    'a', 'an', 'and', 'as', 'at', 'but', 'by', 'for', 'from',
+    'in', 'into', 'is', 'it', 'of', 'on', 'or', 'the', 'to', 'with'
+}
 
 # Configuration
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@postgres-db:5432/microservices_db")
@@ -142,6 +148,35 @@ def get_db():
 # ============================================================================
 # Name Normalization & Deduplication
 # ============================================================================
+
+def normalize_title(title: str) -> str:
+    """
+    Normalize book titles for consistent matching/deduplication.
+    Removes stop words and common articles to help match:
+    - "The Hunt for Red October" with "Hunt for Red October"
+    - "A Brief History of Time" with "Brief History of Time"
+    - "Harry Potter and the Philosopher's Stone" with "Harry Potter Philosopher's Stone"
+    
+    Returns normalized title: lowercase, without stop words, single spaces
+    """
+    # Convert to lowercase and split
+    words = title.strip().lower().split()
+    
+    # Filter out stop words
+    filtered_words = [word for word in words if word not in STOP_WORDS]
+    
+    # Join back with single spaces
+    return ' '.join(filtered_words)
+
+def parse_book_title(title: str) -> str:
+    """
+    Parse and canonicalize book title.
+    - Strip whitespace
+    - Title case
+    
+    Returns canonical format: "Title Case Format"
+    """
+    return title.strip().title()
 
 def parse_author_name(name: str) -> str:
     """
@@ -471,11 +506,11 @@ async def create_book(book: BookCreate, db: Session = Depends(get_db)):
     
     try:
         now = datetime.utcnow()
-        # Title case the book title for consistency
-        canonical_title = book.title.strip().title()
+        # Parse and canonicalize book title
+        canonical_title = parse_book_title(book.title)
         db_book = BookDB(
-            title=canonical_title,  # Store title case format
-            normalized_title=normalize_name(book.title),
+            title=canonical_title,  # Store title case format (e.g., "The Hunt For Red October")
+            normalized_title=normalize_title(book.title),  # Normalized: "hunt red october" (removes stop words)
             author_id=book.author_id,
             isbn=book.isbn,
             genre=book.genre,

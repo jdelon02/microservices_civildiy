@@ -22,6 +22,13 @@ http:
         - web
       service: book-review-service
       rule: PathPrefix(`/api/reviews`)
+    
+    # Health check service routes
+    health-check:
+      entryPoints:
+        - web
+      service: health-check-service
+      rule: PathPrefix(`/api/health`)
   
   services:
     book-catalog-service:
@@ -34,4 +41,10 @@ http:
       loadBalancer:
         servers:
           - url: http://book-review-service:5000
+        passHostHeader: true
+    
+    health-check-service:
+      loadBalancer:
+        servers:
+          - url: http://health-check-service:5000
         passHostHeader: true

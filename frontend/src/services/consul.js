@@ -159,9 +159,8 @@ export const getServiceEndpoint = async (serviceName, fallbackGateway = 'http://
 // Get health status for a specific service via health-check-service
 export const getServiceHealthStatus = async (serviceName) => {
   try {
-    // Use health-check-service API
-    const healthCheckUrl = process.env.REACT_APP_HEALTH_CHECK_URL || 'http://health-check-service:5000';
-    const response = await fetch(`${healthCheckUrl}/api/health/service/${serviceName}?endpoint=health`);
+    // Call health-check-service through Traefik API gateway at /api/health path
+    const response = await fetch(`/api/health/service/${serviceName}?endpoint=health`);
     
     if (!response.ok) {
       return {
@@ -188,8 +187,7 @@ export const getServiceHealthStatus = async (serviceName) => {
 // Get readiness status for a specific service via health-check-service
 export const getServiceReadiness = async (serviceName) => {
   try {
-    const healthCheckUrl = process.env.REACT_APP_HEALTH_CHECK_URL || 'http://health-check-service:5000';
-    const response = await fetch(`${healthCheckUrl}/api/health/service/${serviceName}/ready`);
+    const response = await fetch(`/api/health/service/${serviceName}/ready`);
     
     if (!response.ok) {
       return {
@@ -219,8 +217,7 @@ export const getServiceReadiness = async (serviceName) => {
 // Get database health for a specific service via health-check-service
 export const getServiceDatabaseHealth = async (serviceName) => {
   try {
-    const healthCheckUrl = process.env.REACT_APP_HEALTH_CHECK_URL || 'http://health-check-service:5000';
-    const response = await fetch(`${healthCheckUrl}/api/health/service/${serviceName}/health/db`);
+    const response = await fetch(`/api/health/service/${serviceName}/health/db`);
     
     if (!response.ok) {
       return {

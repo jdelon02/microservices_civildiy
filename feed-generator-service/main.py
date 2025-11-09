@@ -21,6 +21,7 @@ REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_DB = int(os.getenv("REDIS_DB", 0))
 CONSUL_HOST = os.getenv("CONSUL_HOST", "consul-server")
 CONSUL_PORT = os.getenv("CONSUL_PORT", 8500)
+BOOK_CATALOG_URL = os.getenv("BOOK_CATALOG_URL", "http://book-catalog-service:5000")
 
 # Logging
 logging.basicConfig(level=logging.INFO)
@@ -39,13 +40,21 @@ app = FastAPI()
 
 # Pydantic Models
 class ActivityFeedItem(BaseModel):
-    post_id: str
+    post_id: Optional[str] = None
+    review_id: Optional[str] = None
+    book_id: Optional[str] = None
     user_id: int
     username: Optional[str] = None
     event_type: str
     timestamp: datetime
     title: Optional[str] = None
     content: Optional[str] = None
+    # Book-specific fields
+    book_title: Optional[str] = None
+    author_name: Optional[str] = None
+    rating: Optional[int] = None
+    spoiler_warning: Optional[bool] = None
+    tags: Optional[list] = None
 
 # Kafka Consumer Configuration
 def create_kafka_consumer():
@@ -57,30 +66,93 @@ def create_kafka_consumer():
     }
     return Consumer(conf)
 
-# Process Kafka events
-def process_kafka_event(event_data: dict):
+# Enrich review events with book/author data
+async def enrich_review_event(review_data: dict) -> dict:
+    """Enrich review event with book and author information"""
+    try:
+        book_id = review_data.get("book_id")
+        if not book_id:
+            return review_data
+        
+        # Fetch book details from Book Catalog Service
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{BOOK_CATALOG_URL}/api/books/{book_id}")
+            if response.status_code == 200:
+                book_data = response.json()
+                review_data["book_title"] = book_data.get("title", "Unknown Book")
+                author = book_data.get("author", {})
+                review_data["author_name"] = author.get("name", "Unknown Author")
+                logger.debug(f"Enriched review with book data: {book_data['title']} by {author.get('name')}")
+            else:
+                logger.warning(f"Could not fetch book details for book_id {book_id}: {response.status_code}")
+                review_data["book_title"] = "Unknown Book"
+                review_data["author_name"] = "Unknown Author"
+    except Exception as e:
+        logger.error(f"Error enriching review event: {e}")
+        review_data["book_title"] = "Unknown Book"
+        review_data["author_name"] = "Unknown Author"
+    
+    return review_data
+
+# Process Kafka events (updated to handle both posts and reviews)
+def process_kafka_event(event_data: dict, topic: str):
     """Process a Kafka event and update Redis feed"""
     try:
         event_type = event_data.get("event_type")
         timestamp = event_data.get("timestamp")
-        post_data = event_data.get("data", {})
+        data = event_data.get("data", {})
         
-        post_id = post_data.get("post_id")
-        user_id = post_data.get("user_id")
-        title = post_data.get("title", "")
-        content = post_data.get("content", "")
-        username = post_data.get("username", f"User {user_id}")
+        user_id = data.get("user_id")
+        username = data.get("username", f"User {user_id}")
         
-        # Create activity item
-        activity_item = {
-            "post_id": post_id,
-            "user_id": user_id,
-            "username": username,
-            "event_type": event_type,
-            "timestamp": timestamp,
-            "title": title,
-            "content": content
-        }
+        if topic == "posts-events":
+            # Handle post events (existing logic)
+            post_id = data.get("post_id")
+            title = data.get("title", "")
+            content = data.get("content", "")
+            
+            activity_item = {
+                "post_id": post_id,
+                "user_id": user_id,
+                "username": username,
+                "event_type": event_type,
+                "timestamp": timestamp,
+                "title": title,
+                "content": content
+            }
+            
+            logger.info(f"Processed post event: {event_type} for post {post_id}")
+            
+        elif topic == "reviews-events":
+            # Handle review events (new logic)
+            review_id = data.get("review_id") or data.get("id")
+            book_id = data.get("book_id")
+            rating = data.get("rating")
+            content = data.get("content", "")
+            spoiler_warning = data.get("spoiler_warning", False)
+            tags = data.get("tags", [])
+            
+            # Create enriched activity item for reviews
+            activity_item = {
+                "review_id": review_id,
+                "book_id": book_id,
+                "user_id": user_id,
+                "username": username,
+                "event_type": event_type,
+                "timestamp": timestamp,
+                "content": content,
+                "rating": rating,
+                "spoiler_warning": spoiler_warning,
+                "tags": tags,
+                # These will be filled by enrichment
+                "book_title": data.get("book_title", "Unknown Book"),
+                "author_name": data.get("author_name", "Unknown Author")
+            }
+            
+            logger.info(f"Processed review event: {event_type} for review {review_id}")
+        else:
+            logger.warning(f"Unknown topic: {topic}")
+            return
         
         # Store in Redis
         # Global activity stream (latest 1000 items)
@@ -93,17 +165,17 @@ def process_kafka_event(event_data: dict):
         redis_client.lpush(user_feed_key, json.dumps(activity_item))
         redis_client.ltrim(user_feed_key, 0, 99)  # Keep only latest 100 per user
         
-        logger.info(f"Processed event: {event_type} for post {post_id}")
     except Exception as e:
-        logger.error(f"Error processing Kafka event: {e}")
+        logger.error(f"Error processing Kafka event from {topic}: {e}")
 
 # Kafka consumer thread
 def consume_kafka_events():
     """Run Kafka consumer in background thread"""
     consumer = create_kafka_consumer()
-    consumer.subscribe(["posts-events"])
+    # Subscribe to both posts and reviews events
+    consumer.subscribe(["posts-events", "reviews-events"])
     
-    logger.info("Kafka consumer started")
+    logger.info("Kafka consumer started (subscribed to posts-events and reviews-events)")
     
     try:
         while True:
@@ -122,7 +194,8 @@ def consume_kafka_events():
             # Process message
             try:
                 event_data = json.loads(msg.value().decode("utf-8"))
-                process_kafka_event(event_data)
+                topic = msg.topic()
+                process_kafka_event(event_data, topic)
             except json.JSONDecodeError as e:
                 logger.error(f"Error decoding Kafka message: {e}")
             except Exception as e:

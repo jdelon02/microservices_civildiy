@@ -1,0 +1,12 @@
+.create-book-review-page {
+  min-height: calc(100vh - 60px);
+  background-color: #f8f9fa;
+  padding: 20px 0;
+}
+
+@media (max-width: 600px) {
+  .create-book-review-page {
+    min-height: auto;
+    padding: 10px 0;
+  }
+}

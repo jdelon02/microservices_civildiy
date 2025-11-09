@@ -76,6 +76,8 @@ services:
       - auth-service
       - user-profile-service
       - posts-service
+      - book-catalog-service
+      - book-review-service
       - feed-generator-service
       - mongodb
       - kafka
@@ -132,6 +134,54 @@ services:
       - consul-server
 
   
+  book-catalog-service:
+    build:
+      context: ./book-catalog-service
+      dockerfile: Dockerfile
+      cache_from: []
+    container_name: book-catalog-service
+    environment:
+      DATABASE_URL: postgresql://user:password@postgres-db:5432/microservices_db
+      CONSUL_HOST: consul-server
+      CONSUL_PORT: 8500
+    restart: always
+    depends_on:
+      - postgres-db
+      - consul-server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  book-review-service:
+    build:
+      context: ./book-review-service
+      dockerfile: Dockerfile
+      cache_from: []
+    container_name: book-review-service
+    environment:
+      MONGODB_URL: mongodb://user:password@mongodb:27017
+      MONGODB_DB: reviews_db
+      REDIS_HOST: read-db
+      REDIS_PORT: 6379
+      KAFKA_HOST: kafka:9092
+      CONSUL_HOST: consul-server
+      CONSUL_PORT: 8500
+      BOOK_CATALOG_URL: http://book-catalog-service:5000
+    restart: always
+    depends_on:
+      - mongodb
+      - read-db
+      - kafka
+      - consul-server
+      - book-catalog-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   feed-generator-service:
     build:
       context: ./feed-generator-service
@@ -145,11 +195,14 @@ services:
       REDIS_DB: 0
       CONSUL_HOST: consul-server
       SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+      BOOK_CATALOG_URL: http://book-catalog-service:5000
     restart: always
     depends_on:
       - kafka
       - read-db
       - consul-server
+      - book-catalog-service
+      - book-review-service
 
   # --- Frontend ---
 

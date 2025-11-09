@@ -10,11 +10,14 @@
     "@tiptap/extension-image": "^3.10.1",
     "@tiptap/react": "^3.10.1",
     "@tiptap/starter-kit": "^3.10.1",
+    "axios": "^1.13.2",
     "dompurify": "^3.3.0",
+    "lodash.debounce": "^4.0.8",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.5",
     "react-scripts": "5.0.1",
+    "react-select": "^5.10.2",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

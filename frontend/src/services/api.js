@@ -135,3 +135,83 @@ export const profileService = {
       method: 'DELETE',
     }),
 };
+
+// Book services endpoints
+export const bookService = {
+  // Authors
+  searchAuthors: (token, query, limit = 10) =>
+    apiCall(`/api/authors/search?q=${encodeURIComponent(query)}&limit=${limit}`, {
+      token,
+    }),
+
+  getAuthors: (token, limit = 20, skip = 0) =>
+    apiCall(`/api/authors?limit=${limit}&skip=${skip}`, {
+      token,
+    }),
+
+  createAuthor: (token, name) =>
+    apiCall('/api/authors', {
+      token,
+      method: 'POST',
+      body: { name },
+    }),
+
+  // Books
+  searchBooks: (token, query, limit = 10) =>
+    apiCall(`/api/books/search-by-title?q=${encodeURIComponent(query)}&limit=${limit}`, {
+      token,
+    }),
+
+  getBooks: (token, limit = 20, skip = 0) =>
+    apiCall(`/api/books?limit=${limit}&skip=${skip}`, {
+      token,
+    }),
+
+  createBook: (token, title, authorId, genre = '') =>
+    apiCall('/api/books', {
+      token,
+      method: 'POST',
+      body: { title, author_id: authorId, genre },
+    }),
+
+  // Reviews
+  createReview: (token, bookId, rating, content, tags = [], spoilerWarning = false) =>
+    apiCall('/api/reviews', {
+      token,
+      method: 'POST',
+      body: { book_id: bookId, rating, content, tags, spoiler_warning: spoilerWarning },
+    }),
+
+  getReviews: (token, limit = 20, skip = 0) =>
+    apiCall(`/api/reviews?limit=${limit}&skip=${skip}`, {
+      token,
+    }),
+
+  getBookReviews: (token, bookId, limit = 10, skip = 0) =>
+    apiCall(`/api/books/${bookId}/reviews?limit=${limit}&skip=${skip}`, {
+      token,
+    }),
+
+  getBookRating: (token, bookId) =>
+    apiCall(`/api/books/${bookId}/rating`, {
+      token,
+    }),
+
+  getUserReview: (token, userId, bookId) =>
+    apiCall(`/api/users/${userId}/review-of/${bookId}`, {
+      token,
+    }),
+
+  updateReview: (token, reviewId, updates) =>
+    apiCall(`/api/reviews/${reviewId}`, {
+      token,
+      method: 'PUT',
+      body: updates,
+    }),
+
+  deleteReview: (token, reviewId) =>
+    apiCall(`/api/reviews/${reviewId}`, {
+      token,
+      method: 'DELETE',
+    }),
+};

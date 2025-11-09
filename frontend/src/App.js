@@ -8,6 +8,7 @@ import ServiceDiscoveryPage from './pages/ServiceDiscoveryPage';
 import HomePage from './pages/HomePage';
 import PostDetailPage from './pages/PostDetailPage';
 import UserProfilePage from './pages/UserProfilePage';
+import CreateBookReviewPage from './pages/CreateBookReviewPage';
 import './App.css';
 
 function AppContent() {
@@ -28,6 +29,7 @@ function AppContent() {
             <Link to="/services" className="nav-link">Services</Link>
             {isAuthenticated ? (
               <>
+                <Link to="/books/review" className="nav-link">📚 Review a Book</Link>
                 <Link to="/profile" className="nav-link">👤 Profile</Link>
                 <span className="user-info">Welcome, {user?.email}</span>
                 <button onClick={logout} className="logout-btn">Logout</button>
@@ -47,6 +49,7 @@ function AppContent() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/services" element={<ServiceDiscoveryPage />} />
         <Route path="/profile" element={isAuthenticated ? <UserProfilePage /> : <LoginPage />} />
+        <Route path="/books/review" element={<CreateBookReviewPage />} />
         <Route path="/posts/:postId" element={<PostDetailPage />} />
         <Route path="/posts/:postId/edit" element={isAuthenticated ? <PostDetailPage /> : <LoginPage />} />
         <Route path="/" element={<HomePage />} />

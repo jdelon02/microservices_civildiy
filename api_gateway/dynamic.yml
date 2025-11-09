@@ -1,25 +1,29 @@
-# Dynamic Traefik Configuration - Middleware Definitions
-# Note: JWT authentication is now handled at the service level
-
+# Dynamic Traefik Configuration - Routes and Services
 http:
   middlewares: {}
+  
   routers:
-    books@consul:
+    books:
       entryPoints:
         - web
       service: book-catalog-service
       rule: PathPrefix(`/api/books`)
-    reviews@consul:
+    
+    reviews:
       entryPoints:
         - web
       service: book-review-service
       rule: PathPrefix(`/api/reviews`)
+  
   services:
     book-catalog-service:
       loadBalancer:
         servers:
           - url: http://book-catalog-service:5000
+        passHostHeader: true
+    
     book-review-service:
       loadBalancer:
         servers:
           - url: http://book-review-service:5000
+        passHostHeader: true

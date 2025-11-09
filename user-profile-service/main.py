@@ -180,6 +180,79 @@ async def startup_event():
 async def health_check():
     return {"status": "healthy"}
 
+@app.get("/ready")
+async def readiness_check(db: Session = Depends(get_db)):
+    """
+    Readiness probe: Service is ready to accept traffic.
+    Verifies database and Consul connectivity.
+    """
+    health_status = {}
+    
+    try:
+        # Test database connectivity
+        db.execute("SELECT 1")
+        health_status["database"] = "ok"
+    except Exception as e:
+        logger.error(f"Database check failed: {e}")
+        health_status["database"] = f"failed: {str(e)}"
+    
+    try:
+        # Test Consul connectivity
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            response = await client.get(
+                f"http://{CONSUL_HOST}:{CONSUL_PORT}/v1/status/leader",
+                timeout=2.0
+            )
+            if response.status_code == 200:
+                health_status["consul"] = "ok"
+            else:
+                health_status["consul"] = f"failed: {response.status_code}"
+    except Exception as e:
+        logger.error(f"Consul check failed: {e}")
+        health_status["consul"] = f"failed: {str(e)}"
+    
+    # Check if all dependencies are healthy
+    if all(v == "ok" for v in health_status.values()):
+        return {
+            "status": "ready",
+            "service": "user-profile-service",
+            "dependencies": health_status
+        }
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Service not ready: {health_status}"
+        )
+
+@app.get("/health/db")
+async def db_health_check(db: Session = Depends(get_db)):
+    """
+    Database health check: Detailed PostgreSQL status.
+    Verifies connectivity and basic functionality.
+    """
+    health = {}
+    
+    try:
+        # PostgreSQL check
+        db.execute("SELECT 1")
+        db_stats = db.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'").scalar()
+        health["database"] = {
+            "status": "healthy",
+            "tables": db_stats or 0
+        }
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        health["database"] = {"status": "unhealthy", "error": str(e)}
+    
+    # Check if database is unhealthy
+    if health.get("database", {}).get("status") == "unhealthy":
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database unhealthy: {health}"
+        )
+    
+    return health
+
 @app.post("/api/profile", response_model=UserProfileResponse)
 async def create_profile(profile: UserProfileCreate, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     """Create a new user profile"""

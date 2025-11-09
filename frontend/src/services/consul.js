@@ -155,3 +155,133 @@ export const getServiceEndpoint = async (serviceName, fallbackGateway = 'http://
     return fallbackGateway;
   }
 };
+
+// Get health status for a specific service
+export const getServiceHealthStatus = async (serviceName) => {
+  try {
+    const endpoint = await getServiceEndpoint(serviceName);
+    
+    // Try to fetch from /health endpoint
+    const response = await fetch(`${endpoint}/health`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 5000
+    });
+    
+    if (!response.ok) {
+      return {
+        status: 'unhealthy',
+        code: response.status,
+        error: `HTTP ${response.status}`
+      };
+    }
+    
+    const data = await response.json();
+    return {
+      status: data.status === 'healthy' ? 'healthy' : 'unknown',
+      ...data
+    };
+  } catch (error) {
+    console.warn(`Failed to get health for ${serviceName}:`, error.message);
+    return {
+      status: 'unreachable',
+      error: error.message
+    };
+  }
+};
+
+// Get readiness status for a specific service
+export const getServiceReadiness = async (serviceName) => {
+  try {
+    const endpoint = await getServiceEndpoint(serviceName);
+    const response = await fetch(`${endpoint}/ready`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 5000
+    });
+    
+    if (!response.ok) {
+      return {
+        ready: false,
+        code: response.status,
+        reason: `HTTP ${response.status}`,
+        dependencies: {}
+      };
+    }
+    
+    const data = await response.json();
+    return {
+      ready: data.status === 'ready',
+      dependencies: data.dependencies || {},
+      ...data
+    };
+  } catch (error) {
+    console.warn(`Failed to get readiness for ${serviceName}:`, error.message);
+    return {
+      ready: false,
+      reason: error.message,
+      dependencies: {}
+    };
+  }
+};
+
+// Get database health for a specific service
+export const getServiceDatabaseHealth = async (serviceName) => {
+  try {
+    const endpoint = await getServiceEndpoint(serviceName);
+    const response = await fetch(`${endpoint}/health/db`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 5000
+    });
+    
+    if (!response.ok) {
+      return {
+        status: 'unhealthy',
+        code: response.status,
+        error: `HTTP ${response.status}`
+      };
+    }
+    
+    const data = await response.json();
+    return {
+      status: 'healthy',
+      ...data
+    };
+  } catch (error) {
+    console.warn(`Failed to get db health for ${serviceName}:`, error.message);
+    return {
+      status: 'unreachable',
+      error: error.message
+    };
+  }
+};
+
+// Get full health check for a service (combines all checks)
+export const getFullServiceHealth = async (serviceName) => {
+  try {
+    const [liveness, readiness, db] = await Promise.all([
+      getServiceHealthStatus(serviceName).catch(() => ({ status: 'error' })),
+      getServiceReadiness(serviceName).catch(() => ({ ready: false, error: 'timeout' })),
+      getServiceDatabaseHealth(serviceName).catch(() => ({ status: 'error' }))
+    ]);
+    
+    return {
+      service: serviceName,
+      timestamp: new Date().toISOString(),
+      liveness,
+      readiness,
+      database: db,
+      // Compute overall status
+      overallStatus: liveness.status === 'healthy' && readiness.ready ? 'healthy' : 'unhealthy'
+    };
+  } catch (error) {
+    console.error(`Failed to get full health for ${serviceName}:`, error);
+    return {
+      service: serviceName,
+      timestamp: new Date().toISOString(),
+      overallStatus: 'error',
+      error: error.message
+    };
+  }
+};

@@ -62,7 +62,6 @@ async def register_with_consul():
                 "traefik/http/routers/health-check/rule": "PathPrefix(`/api/health`)",
                 "traefik/http/routers/health-check/service": "health-check-service",
                 "traefik/http/routers/health-check/entrypoints": "web",
-                "traefik/http/routers/health-check/priority": "2147483647",
                 "traefik/http/services/health-check-service/loadbalancer/servers/0/url": "http://health-check-service:5000"
             }
             

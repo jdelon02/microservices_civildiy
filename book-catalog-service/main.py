@@ -69,6 +69,23 @@ class BookDB(Base):
 Base.metadata.create_all(bind=engine)
 
 # ============================================================================
+# Database Schema Initialization
+# ============================================================================
+# NOTE: SQLAlchemy's metadata.create_all() only creates NEW tables.
+# For schema changes (new columns), we need manual migration.
+# 
+# Required columns (added during initial deployment via manual SQL):
+# - authors.normalized_name (VARCHAR(255), UNIQUE, indexed)
+# - books.normalized_title (VARCHAR(255), indexed)
+#
+# If tables don't have these columns after deployment, run:
+# ALTER TABLE authors ADD COLUMN IF NOT EXISTS normalized_name VARCHAR(255) UNIQUE;
+# ALTER TABLE books ADD COLUMN IF NOT EXISTS normalized_title VARCHAR(255);
+# UPDATE authors SET normalized_name = LOWER(REGEXP_REPLACE(name, '\\s+', ' ', 'g')) WHERE normalized_name IS NULL;
+# CREATE INDEX IF NOT EXISTS idx_authors_normalized_name ON authors(normalized_name);
+# CREATE INDEX IF NOT EXISTS idx_books_normalized_title ON books(normalized_title);
+
+# ============================================================================
 # Pydantic Models
 # ============================================================================
 

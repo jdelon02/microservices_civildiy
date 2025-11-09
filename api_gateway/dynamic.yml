@@ -3,12 +3,20 @@ http:
   middlewares: {}
   
   routers:
+    # Book catalog service routes (authors and books)
+    authors:
+      entryPoints:
+        - web
+      service: book-catalog-service
+      rule: PathPrefix(`/api/authors`)
+    
     books:
       entryPoints:
         - web
       service: book-catalog-service
       rule: PathPrefix(`/api/books`)
     
+    # Book review service routes
     reviews:
       entryPoints:
         - web

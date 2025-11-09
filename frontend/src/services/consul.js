@@ -156,21 +156,16 @@ export const getServiceEndpoint = async (serviceName, fallbackGateway = 'http://
   }
 };
 
-// Get health status for a specific service
+// Get health status for a specific service via health-check-service
 export const getServiceHealthStatus = async (serviceName) => {
   try {
-    const endpoint = await getServiceEndpoint(serviceName);
-    
-    // Try to fetch from /health endpoint
-    const response = await fetch(`${endpoint}/health`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      timeout: 5000
-    });
+    // Use health-check-service API
+    const healthCheckUrl = process.env.REACT_APP_HEALTH_CHECK_URL || 'http://health-check-service:5000';
+    const response = await fetch(`${healthCheckUrl}/api/health/service/${serviceName}?endpoint=health`);
     
     if (!response.ok) {
       return {
-        status: 'unhealthy',
+        status: 'unreachable',
         code: response.status,
         error: `HTTP ${response.status}`
       };
@@ -178,7 +173,7 @@ export const getServiceHealthStatus = async (serviceName) => {
     
     const data = await response.json();
     return {
-      status: data.status === 'healthy' ? 'healthy' : 'unknown',
+      status: data.status === 'reachable' ? 'healthy' : 'unreachable',
       ...data
     };
   } catch (error) {
@@ -190,15 +185,11 @@ export const getServiceHealthStatus = async (serviceName) => {
   }
 };
 
-// Get readiness status for a specific service
+// Get readiness status for a specific service via health-check-service
 export const getServiceReadiness = async (serviceName) => {
   try {
-    const endpoint = await getServiceEndpoint(serviceName);
-    const response = await fetch(`${endpoint}/ready`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      timeout: 5000
-    });
+    const healthCheckUrl = process.env.REACT_APP_HEALTH_CHECK_URL || 'http://health-check-service:5000';
+    const response = await fetch(`${healthCheckUrl}/api/health/service/${serviceName}/ready`);
     
     if (!response.ok) {
       return {
@@ -211,8 +202,8 @@ export const getServiceReadiness = async (serviceName) => {
     
     const data = await response.json();
     return {
-      ready: data.status === 'ready',
-      dependencies: data.dependencies || {},
+      ready: data.status?.includes('ready') || data.data?.status === 'ready' || false,
+      dependencies: data.data?.dependencies || {},
       ...data
     };
   } catch (error) {
@@ -225,19 +216,15 @@ export const getServiceReadiness = async (serviceName) => {
   }
 };
 
-// Get database health for a specific service
+// Get database health for a specific service via health-check-service
 export const getServiceDatabaseHealth = async (serviceName) => {
   try {
-    const endpoint = await getServiceEndpoint(serviceName);
-    const response = await fetch(`${endpoint}/health/db`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      timeout: 5000
-    });
+    const healthCheckUrl = process.env.REACT_APP_HEALTH_CHECK_URL || 'http://health-check-service:5000';
+    const response = await fetch(`${healthCheckUrl}/api/health/service/${serviceName}/health/db`);
     
     if (!response.ok) {
       return {
-        status: 'unhealthy',
+        status: 'unreachable',
         code: response.status,
         error: `HTTP ${response.status}`
       };
@@ -245,7 +232,7 @@ export const getServiceDatabaseHealth = async (serviceName) => {
     
     const data = await response.json();
     return {
-      status: 'healthy',
+      status: data.status === 'reachable' ? 'healthy' : 'unreachable',
       ...data
     };
   } catch (error) {

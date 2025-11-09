@@ -206,19 +206,48 @@ services:
       - book-catalog-service
       - book-review-service
 
+  health-check-service:
+    build:
+      context: ./health-check-service
+      dockerfile: Dockerfile
+      cache_from: []
+    container_name: health-check-service
+    environment:
+      CONSUL_HOST: consul-server
+      CONSUL_PORT: 8500
+      SERVICE_HOST: health-check-service
+    restart: always
+    depends_on:
+      - consul-server
+      - auth-service
+      - user-profile-service
+      - posts-service
+      - book-catalog-service
+      - book-review-service
+      - feed-generator-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   # --- Frontend ---
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      cache_from: []
     container_name: frontend
     ports:
       - "3000:80"
     environment:
       REACT_APP_API_URL: http://api-gateway:80
+      REACT_APP_HEALTH_CHECK_URL: http://health-check-service:5000
     depends_on:
       - api-gateway
       - consul-server
+      - health-check-service
     restart: always
 

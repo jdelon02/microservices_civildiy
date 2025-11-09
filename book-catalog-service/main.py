@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Dict, Any, Optional, List
 from datetime import datetime
+import difflib
 
 from fastapi import FastAPI, HTTPException, status, Depends
 from pydantic import BaseModel
@@ -137,6 +138,49 @@ def get_db():
         db.close()
 
 # ============================================================================
+# Name Normalization & Deduplication
+# ============================================================================
+
+def normalize_name(name: str) -> str:
+    """
+    Normalize author/book names for consistent matching.
+    - Strip whitespace
+    - Convert to lowercase
+    - Remove extra spaces between words
+    """
+    return ' '.join(name.strip().lower().split())
+
+def find_similar_author(query: str, db: Session) -> Optional[AuthorDB]:
+    """
+    Find similar existing author using fuzzy matching.
+    Handles variations like "Tom Clancy", "clancy tom", "Clancy, Tom"
+    
+    Returns the best match if similarity > 0.6 (60%)
+    """
+    normalized_query = normalize_name(query)
+    
+    # Get all authors
+    authors = db.query(AuthorDB).all()
+    
+    best_match = None
+    best_ratio = 0
+    
+    for author in authors:
+        normalized_author = normalize_name(author.name)
+        # Check for exact match first
+        if normalized_author == normalized_query:
+            return author
+        
+        # Check for partial/fuzzy match
+        ratio = difflib.SequenceMatcher(None, normalized_query, normalized_author).ratio()
+        if ratio > best_ratio:
+            best_ratio = ratio
+            best_match = author
+    
+    # Return best match if similarity is > 60%
+    return best_match if best_ratio > 0.6 else None
+
+# ============================================================================
 # Self-registration with Consul
 # ============================================================================
 
@@ -221,13 +265,20 @@ async def health_check():
 async def create_author(author: AuthorCreate, db: Session = Depends(get_db)):
     """Create a new author"""
     
-    # Check if author already exists
+    # Check for exact match
     existing = db.query(AuthorDB).filter(AuthorDB.name == author.name).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Author '{author.name}' already exists"
         )
+    
+    # Check for similar author (fuzzy match) - helps prevent duplicates
+    similar_author = find_similar_author(author.name, db)
+    if similar_author:
+        # Return existing similar author instead of creating duplicate
+        logger.info(f"Found similar author: '{author.name}' matches '{similar_author.name}'")
+        return similar_author
     
     try:
         db_author = AuthorDB(
@@ -249,7 +300,14 @@ async def create_author(author: AuthorCreate, db: Session = Depends(get_db)):
 
 @app.get("/api/authors/search", response_model=List[AuthorResponse])
 async def search_authors(q: str, limit: int = 10, db: Session = Depends(get_db)):
-    """Search authors by name (autocomplete)"""
+    """Search authors by name (autocomplete)
+    
+    Supports:
+    - Case-insensitive search
+    - Partial name matching ("tom" matches "Tom Clancy")
+    - Name order variations ("clancy tom" matches "Tom Clancy")
+    - Fuzzy matching for close variations
+    """
     
     if len(q) < 1:
         raise HTTPException(
@@ -265,7 +323,24 @@ async def search_authors(q: str, limit: int = 10, db: Session = Depends(get_db))
             .limit(limit)\
             .all()
         
-        return authors
+        # Also try fuzzy matching for name order variations
+        # This helps find "Tom Clancy" when searching "clancy tom"
+        normalized_query = normalize_name(q)
+        fuzzy_matches = []
+        
+        for author in db.query(AuthorDB).all():
+            if author not in authors:  # Don't duplicate LIKE results
+                normalized_author = normalize_name(author.name)
+                ratio = difflib.SequenceMatcher(None, normalized_query, normalized_author).ratio()
+                if ratio > 0.6:  # 60% similarity threshold
+                    fuzzy_matches.append((author, ratio))
+        
+        # Sort fuzzy matches by similarity (highest first) and combine with LIKE results
+        fuzzy_matches.sort(key=lambda x: x[1], reverse=True)
+        fuzzy_results = [author for author, ratio in fuzzy_matches]
+        
+        combined_results = authors + fuzzy_results
+        return combined_results[:limit]
     except Exception as e:
         logger.error(f"Error searching authors: {e}")
         raise HTTPException(
@@ -321,7 +396,10 @@ async def autocomplete_book_titles(q: str, limit: int = 10, db: Session = Depend
     """Autocomplete book titles for frontend combobox
     
     Returns only unique book titles matching the query.
-    Used for book title typeahead search.
+    Supports:
+    - Case-insensitive search
+    - Partial title matching
+    - Fuzzy matching for typos
     """
     
     if len(q) < 1:
@@ -341,6 +419,25 @@ async def autocomplete_book_titles(q: str, limit: int = 10, db: Session = Depend
         
         # Extract just the titles
         titles = [book[0] for book in books]
+        
+        # If we need more results, try fuzzy matching
+        if len(titles) < limit:
+            normalized_query = normalize_name(q)
+            all_books = db.query(BookDB.title.distinct()).all()
+            fuzzy_matches = []
+            
+            for book in all_books:
+                title = book[0]
+                if title not in titles:  # Don't duplicate
+                    normalized_title = normalize_name(title)
+                    ratio = difflib.SequenceMatcher(None, normalized_query, normalized_title).ratio()
+                    if ratio > 0.6:  # 60% similarity threshold
+                        fuzzy_matches.append((title, ratio))
+            
+            # Sort by similarity and add to results
+            fuzzy_matches.sort(key=lambda x: x[1], reverse=True)
+            titles.extend([title for title, ratio in fuzzy_matches[:limit - len(titles)]])
+        
         return titles
     except Exception as e:
         logger.error(f"Error autocompleting book titles: {e}")
@@ -408,7 +505,10 @@ async def search_books_by_title(
     """Search books by title (optimized for autocomplete)
     
     Returns full book details for books matching the title query.
-    If no results, frontend can suggest creating a new book.
+    Supports:
+    - Case-insensitive search
+    - Partial title matching
+    - Fuzzy matching for typos and variations
     """
     
     if len(q) < 1:

@@ -156,21 +156,18 @@ export const getServiceEndpoint = async (serviceName, fallbackGateway = 'http://
   }
 };
 
-// Get health status for a specific service
+// Get health status for a specific service via local proxy
 export const getServiceHealthStatus = async (serviceName) => {
   try {
-    const endpoint = await getServiceEndpoint(serviceName);
-    
-    // Try to fetch from /health endpoint
-    const response = await fetch(`${endpoint}/health`, {
+    // Use local API proxy endpoint
+    const response = await fetch(`/api/health/${serviceName}/health`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
-      timeout: 5000
     });
     
     if (!response.ok) {
       return {
-        status: 'unhealthy',
+        status: response.status === 503 ? 'unreachable' : 'unhealthy',
         code: response.status,
         error: `HTTP ${response.status}`
       };
@@ -190,14 +187,12 @@ export const getServiceHealthStatus = async (serviceName) => {
   }
 };
 
-// Get readiness status for a specific service
+// Get readiness status for a specific service via local proxy
 export const getServiceReadiness = async (serviceName) => {
   try {
-    const endpoint = await getServiceEndpoint(serviceName);
-    const response = await fetch(`${endpoint}/ready`, {
+    const response = await fetch(`/api/health/${serviceName}/ready`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
-      timeout: 5000
     });
     
     if (!response.ok) {
@@ -225,19 +220,17 @@ export const getServiceReadiness = async (serviceName) => {
   }
 };
 
-// Get database health for a specific service
+// Get database health for a specific service via local proxy
 export const getServiceDatabaseHealth = async (serviceName) => {
   try {
-    const endpoint = await getServiceEndpoint(serviceName);
-    const response = await fetch(`${endpoint}/health/db`, {
+    const response = await fetch(`/api/health/${serviceName}/health/db`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
-      timeout: 5000
     });
     
     if (!response.ok) {
       return {
-        status: 'unhealthy',
+        status: response.status === 503 ? 'unreachable' : 'unhealthy',
         code: response.status,
         error: `HTTP ${response.status}`
       };

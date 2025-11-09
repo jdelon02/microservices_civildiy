@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import Select from 'react-select';
+import Creatable from 'react-select/creatable';
 import debounce from 'lodash.debounce';
 import axios from 'axios';
 import './BookReviewForm.css';
@@ -324,7 +324,7 @@ const BookReviewForm = ({ token, onSuccess, onCancel }) => {
         {/* Author Selection */}
         <div className="form-group">
           <label htmlFor="author">Author *</label>
-          <Select
+          <Creatable
             id="author"
             name="author"
             isClearable
@@ -343,6 +343,11 @@ const BookReviewForm = ({ token, onSuccess, onCancel }) => {
             allowCreateWhileLoading
             className="react-select-container"
             classNamePrefix="react-select"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.target.tagName.match(/textarea|input/i)) {
+                e.preventDefault();
+              }
+            }}
           />
           {authorError && <small className="error-text">{authorError}</small>}
           <small>Search for existing authors or create a new one</small>
@@ -351,7 +356,7 @@ const BookReviewForm = ({ token, onSuccess, onCancel }) => {
         {/* Book Selection */}
         <div className="form-group">
           <label htmlFor="book">Book Title * {!selectedAuthor && <span className="disabled-hint">(select author first)</span>}</label>
-          <Select
+          <Creatable
             id="book"
             name="book"
             isClearable
@@ -370,6 +375,11 @@ const BookReviewForm = ({ token, onSuccess, onCancel }) => {
             allowCreateWhileLoading
             className="react-select-container"
             classNamePrefix="react-select"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.target.tagName.match(/textarea|input/i)) {
+                e.preventDefault();
+              }
+            }}
           />
           {bookError && <small className="error-text">{bookError}</small>}
           <small>Search for existing books or create a new one</small>

@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { feedService } from '../services/api';
+import CreateChoiceModal from '../components/CreateChoiceModal';
 import CreatePostModal from '../components/CreatePostModal';
 import FeedCard from '../components/FeedCard';
 import './HomePage.css';
 
 const HomePage = () => {
   const { isAuthenticated, token } = useAuth();
+  const navigate = useNavigate();
   
   // Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isChoiceModalOpen, setIsChoiceModalOpen] = useState(false);
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   
   // Feed state
   const [activities, setActivities] = useState([]);
@@ -84,16 +88,30 @@ const HomePage = () => {
       {/* Floating Action Button */}
       <button 
         className="fab-button" 
-        onClick={() => setIsModalOpen(true)}
-        title="Create New Post"
+        onClick={() => setIsChoiceModalOpen(true)}
+        title="Create New Content"
       >
         ✏️
       </button>
 
+      {/* Create Choice Modal */}
+      <CreateChoiceModal
+        isOpen={isChoiceModalOpen}
+        onClose={() => setIsChoiceModalOpen(false)}
+        onCreatePost={() => {
+          setIsChoiceModalOpen(false);
+          setIsPostModalOpen(true);
+        }}
+        onCreateReview={() => {
+          setIsChoiceModalOpen(false);
+          navigate('/books/review');
+        }}
+      />
+
       {/* Create Post Modal */}
       <CreatePostModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isPostModalOpen}
+        onClose={() => setIsPostModalOpen(false)}
         onPostCreated={handlePostCreated}
       />
 

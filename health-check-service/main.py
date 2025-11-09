@@ -285,7 +285,7 @@ async def get_service_health(
     return result
 
 
-@app.get("/api/health/service/{service_name}/{endpoint}")
+@app.get("/api/health/service/{service_name}/{endpoint:path}")
 async def get_service_endpoint_health(
     service_name: str,
     endpoint: str

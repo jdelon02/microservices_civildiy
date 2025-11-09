@@ -301,7 +301,14 @@ async def get_service_endpoint_health(
         Health status for the service endpoint
     """
     # Reconstruct full endpoint path
-    full_endpoint = endpoint if endpoint.startswith("health") else f"health/{endpoint}"
+    # Special handling for 'ready' endpoint which lives at root level
+    # All other endpoints like 'db', 'kafka' should be prefixed with 'health/'
+    if endpoint == "ready":
+        full_endpoint = "ready"
+    elif endpoint.startswith("health"):
+        full_endpoint = endpoint
+    else:
+        full_endpoint = f"health/{endpoint}"
     
     result = await fetch_service_health(service_name, full_endpoint)
     

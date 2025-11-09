@@ -2,14 +2,15 @@
 api:
   insecure: true
   dashboard: true
+  debug: false
+  entryPoint: "dashboard"
 
 entryPoints:
+  dashboard:
+    address: ":8081"
+  
   web:
     address: ":80"
-
-api:
-  dashboard: true
-  insecure: true
 
 providers:
   docker:
